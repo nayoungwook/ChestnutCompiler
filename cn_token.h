@@ -58,7 +58,7 @@ enum token_type {
 
 	tok_cast = 63,
 
-	tok_int = 64, tok_float = 65, tok_bool = 66,
+	tok_int = 64, tok_float = 65, tok_bool = 66, tok_load = 67,
 };
 
 static std::map<int, std::string> token_string = {
@@ -96,7 +96,8 @@ static std::map<int, std::string> token_string = {
 	{tok_number, "number"},
 	{tok_char, "char"},
 	{tok_string, "string"},
-	{tok_import, "import"},
+	{tok_import, "#import"},
+	{tok_load, "#load"},
 	{tok_basic, "basic"},
 	{tok_string_identifier, "string identifier"},
 	{tok_pubilc, "public"},

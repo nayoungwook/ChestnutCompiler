@@ -37,6 +37,7 @@ enum ast_type {
 	vector_declaration_ast = 26,
 	cast_ast = 27,
 	keyboard_ast = 28,
+	load_ast = 29,
 };
 
 class BaseAST {
@@ -112,6 +113,15 @@ public:
 	std::string import_type;
 	ImportAST(const std::string& import_type) : import_type(import_type) {
 		type = import_ast;
+	};
+};
+
+class LoadAST : public BaseAST {
+private:
+public:
+	std::string path, name;
+	LoadAST(std::string const& name, std::string const& path) : path(path), name(name) {
+		type = load_ast;
 	};
 };
 

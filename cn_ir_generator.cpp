@@ -17,6 +17,7 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("print", 0));
 	builtin_function_symbol.insert(std::make_pair("window", 1));
 	builtin_function_symbol.insert(std::make_pair("load_scene", 2));
+	builtin_function_symbol.insert(std::make_pair("image", 3));
 }
 
 void create_scope() {
@@ -70,6 +71,38 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 		result += area->at(i).size();
 	}
 	return result;
+}
+
+Data* create_identifier_ast(std::string const& identifier, std::string& result, int line_number, int indentation) {
+
+	std::string load_type = "";
+	unsigned int id = 0;
+
+	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+
+	Data* data = get_local_variable(local_variable_symbol, identifier);
+
+	load_type = "@LOAD_LOCAL";
+	id = get_local_variable_id(local_variable_symbol, identifier);
+
+	if (data == nullptr) {
+		if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
+			std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+			id = _class->find(identifier)->second;
+			load_type = "@LOAD_CLASS";
+		}
+		else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+			data = &global_variable_symbol[identifier];
+			id = data->id;
+			load_type = "@LOAD_GLOBAL";
+		}
+	}
+
+	std::string line = load_type + " " + std::to_string(id)
+		+ " (" + identifier + ") " + std::to_string(line_number);
+
+	append_data(result, line, indentation);
+	return data;
 }
 
 void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
@@ -148,6 +181,38 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	std::string result = "";
 
 	switch (ast->type) {
+
+	case load_ast: {
+		LoadAST* load_ast = (LoadAST*)ast;
+		append_data(result, "#LOAD " + load_ast->name + " " + load_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
+
+		break;
+	}
+
+	case array_declaration_ast: {
+		ArrayDeclarationAST* array_ast = (ArrayDeclarationAST*)ast;
+
+		for (int i = array_ast->elements.size() - 1; i >= 0; i--) {
+			append_data(result, create_ir(array_ast->elements[i], 0), indentation + 1);
+		}
+
+		append_data(result, "@ARRAY " + std::to_string(array_ast->elements.size()) + " " + std::to_string(ast->line_number), indentation);
+
+		break;
+	}
+
+	case array_refer_ast: {
+		ArrayReferAST* array_refer_ast = (ArrayReferAST*)ast;
+
+		create_identifier_ast(array_refer_ast->identifier, result, array_refer_ast->line_number, indentation);
+
+		for (int i = 0; i < array_refer_ast->indexes.size(); i++) {
+			append_data(result, create_ir(array_refer_ast->indexes[i], indentation), indentation);
+			append_data(result, "@ARRAY_GET " + std::to_string(ast->line_number), indentation);
+		}
+
+		break;
+	}
 
 	case new_ast: {
 		NewAST* new_ast = ((NewAST*)ast);
@@ -342,33 +407,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		IdentifierAST* _identifier_ast = ((IdentifierAST*)ast);
 		std::string identifier = _identifier_ast->identifier;
 
-		std::string load_type = "";
-		unsigned int id = 0;
-
-		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
-
-		Data* data = get_local_variable(local_variable_symbol, identifier);
-
-		load_type = "@LOAD_LOCAL";
-		id = get_local_variable_id(local_variable_symbol, identifier);
-
-		if (data == nullptr) {
-			if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
-				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
-				id = _class->find(identifier)->second;
-				load_type = "@LOAD_CLASS";
-			}
-			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
-				data = &global_variable_symbol[identifier];
-				id = data->id;
-				load_type = "@LOAD_GLOBAL";
-			}
-		}
-
-		std::string line = load_type + " " + std::to_string(id)
-			+ " (" + identifier + ") " + std::to_string(ast->line_number);
-
-		append_data(result, line, indentation);
+		Data* data = create_identifier_ast(identifier, result, _identifier_ast->line_number, indentation);
 
 		BaseAST* searcher = _identifier_ast;
 

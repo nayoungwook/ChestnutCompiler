@@ -69,8 +69,6 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			if (identifier == "char") type = tok_char;
 			if (identifier == "string") type = tok_string;
 
-			if (identifier == "import") type = tok_import;
-
 			if (identifier == "cast") type = tok_cast;
 
 			if (identifier == "public") type = tok_pubilc;
@@ -275,8 +273,25 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			}
 		}
 		else if (cur_char == '#') {
-			type = tok_sharp;
-			identifier = "#";
+
+			if (next_char == ' ') {
+				type = tok_sharp;
+				identifier = "#";
+			}
+			else {
+				while (isalnum(next_char) || next_char == '_') {
+					if (i >= line.length()) break;
+					identifier += cur_char;
+					get_char(line, i);
+				}
+				identifier += cur_char;
+
+				if (identifier == "#import")
+					type = tok_import;
+				else if (identifier == "#load")
+					type = tok_load;
+			}
+
 		}
 		else if (cur_char == ';') {
 			type = tok_semi_colon;

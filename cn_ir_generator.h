@@ -50,6 +50,7 @@ void append_data(std::string& target, std::string content, int indentation);
 const std::string create_ir(BaseAST* ast, int indentation);
 
 void create_assign_ir(BaseAST* ast, std::string& result, int indentation);
+Data* create_identifier_ast(std::string const& identifier, std::string& result, int line_number, int indentation);
 
 void create_scope();
 void destroy_scope();
