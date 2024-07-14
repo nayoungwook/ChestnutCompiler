@@ -1,0 +1,6 @@
+FUNC 0 (main) void {
+    @PUSH_STRING "Hello, World!" 1
+
+    @CALL_FUNCTION 0 (print) 1 1
+
+}
