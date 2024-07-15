@@ -325,10 +325,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		std::string function_name = function_declaration_ast->function_name;
 
-		if (current_scope == scope_global) {
-			global_function_symbol.insert(std::make_pair(function_name, global_function_symbol.size()));
-		}
-
 		unsigned int id = 0;
 
 		switch (current_scope) {
@@ -342,6 +338,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			id = (unsigned int)_class->size();
 			_class->insert(std::make_pair(function_name, id));
 			break;
+		}
+
+		if (current_scope == scope_global) {
+			global_function_symbol.insert(std::make_pair(function_name, global_function_symbol.size()));
 		}
 
 		scopes backup_scope = current_scope;
