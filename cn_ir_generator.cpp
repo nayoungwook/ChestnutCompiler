@@ -533,6 +533,35 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		break;
 	}
 
+	case while_statement_ast: {
+
+		local_variable_symbols.top()->push_back({});
+
+		WhileStatementAST* while_statement_ast = (WhileStatementAST*)(ast);
+
+		label_id++;
+		int begin_id = label_id;
+		label_id++;
+		int condition_id = label_id;
+		 
+		append_data(result, "@GOTO " + integer_to_hex(condition_id) + " " + std::to_string(ast->line_number), indentation);
+
+		append_data(result, "@LABEL " + integer_to_hex(begin_id) + " " + std::to_string(ast->line_number), 0);
+
+		for (int i = 0; i < while_statement_ast->body.size(); i++) {
+			append_data(result, create_ir(while_statement_ast->body[i], indentation), 0);
+		}
+
+		append_data(result, "@LABEL " + integer_to_hex(condition_id) + " " + std::to_string(ast->line_number), 0);
+
+		append_data(result, create_ir(while_statement_ast->condition, indentation), indentation);
+
+		append_data(result, "@FOR " + integer_to_hex(begin_id) + " " + std::to_string(ast->line_number), indentation);
+
+		local_variable_symbols.top()->erase(local_variable_symbols.top()->begin() + local_variable_symbols.top()->size() - 1);
+		break;
+	}
+
 	case return_ast: {
 		ReturnAST* return_ast = ((ReturnAST*)ast);
 		std::string expr = create_ir(return_ast->expression, indentation);

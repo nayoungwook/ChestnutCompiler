@@ -1,6 +1,6 @@
-C:\workspace\ChsetnutCompiler\cn_ast.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_ast.obj
-C:\workspace\ChsetnutCompiler\cn_ir_generator.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_ir_generator.obj
-C:\workspace\ChsetnutCompiler\cn_parser.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_parser.obj
-C:\workspace\ChsetnutCompiler\cn_tokenizer.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_tokenizer.obj
-C:\workspace\ChsetnutCompiler\main.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\main.obj
-C:\workspace\ChsetnutCompiler\sys_file.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\sys_file.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\cn_ast.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ast.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\cn_ir_generator.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ir_generator.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\cn_parser.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_parser.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\cn_tokenizer.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_tokenizer.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\main.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\main.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\sys_file.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_file.obj
