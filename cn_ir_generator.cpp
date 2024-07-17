@@ -189,6 +189,19 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		break;
 	}
 
+	case vector_declaration_ast: {
+
+		VectorDeclarationAST* vector_declaration_ast = (VectorDeclarationAST*)ast;
+
+		for (int i = vector_declaration_ast->elements.size() - 1; i >= 0; i--) {
+			append_data(result, create_ir(vector_declaration_ast->elements[i], 0), indentation + 1);
+		}
+
+		append_data(result, "@VECTOR " + std::to_string(vector_declaration_ast->elements.size()) + " " + std::to_string(ast->line_number), indentation);
+
+		break;
+	}
+
 	case array_declaration_ast: {
 		ArrayDeclarationAST* array_ast = (ArrayDeclarationAST*)ast;
 
@@ -414,12 +427,34 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		while (searcher->attr != nullptr) {
 			if (searcher->attr->type == identifier_ast) {
 				IdentifierAST* ident_ast = (IdentifierAST*)searcher->attr;
-				std::unordered_map<std::string, unsigned int> _class = class_member_variables->find(data->type)->second;
-				unsigned int id = _class.find(ident_ast->identifier)->second;
+				unsigned int id = 0;
+				std::string _attr;
 
-				std::string _attr = "@LOAD_ATTR " + std::to_string(id)
-					+ " (" + ident_ast->identifier + ") " + std::to_string(ast->line_number);
+				if (class_member_variables->find(data->type) != class_member_variables->end()) { // case for attr of class memory
+					std::unordered_map<std::string, unsigned int> _class = class_member_variables->find(data->type)->second;
+					id = _class.find(ident_ast->identifier)->second;
 
+					_attr = "@LOAD_ATTR " + std::to_string(id)
+						+ " (" + ident_ast->identifier + ") " + std::to_string(ast->line_number);
+
+					append_data(result, _attr, indentation);
+				}
+				else { // case for @1 ( vector data )
+					std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+					Data* data = get_local_variable(local_variable_symbol, identifier);
+
+					if (ident_ast->identifier == "x") id = 0;
+					if (ident_ast->identifier == "y") id = 1;
+					if (ident_ast->identifier == "z") id = 2;
+
+					if (data != nullptr) {
+						if (data->type == "vector") {
+							_attr = "@LOAD_ATTR " + std::to_string(id)
+								+ " (" + ident_ast->identifier + ") " + std::to_string(ast->line_number);
+
+						}
+					}
+				}
 				append_data(result, _attr, indentation);
 			}
 			else if (searcher->attr->type == function_call_ast) {
@@ -543,7 +578,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		int begin_id = label_id;
 		label_id++;
 		int condition_id = label_id;
-		 
+
 		append_data(result, "@GOTO " + integer_to_hex(condition_id) + " " + std::to_string(ast->line_number), indentation);
 
 		append_data(result, "@LABEL " + integer_to_hex(begin_id) + " " + std::to_string(ast->line_number), 0);
