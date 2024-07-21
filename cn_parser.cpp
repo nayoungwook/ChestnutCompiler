@@ -502,10 +502,18 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 	bool _is_incre = tokens.size() != 0 && check_token(tokens)->type == tok_incre;
 	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
 	bool _is_array_reference = tokens.size() != 0 && check_token(tokens)->type == tok_l_sq_bracket;
+	bool _is_variable_declaration = tokens.size() != 0 && check_token(tokens)->type == tok_colon;
 	bool _is_kb = target->identifier == "kb";
 
 	if (_is_assign)
 		return create_assign_ast(tokens, target);
+	else if (_is_variable_declaration) {
+		std::vector<Token*> _tokens;
+		_tokens.push_back(new Token(tok_identifier, target->identifier, target->line_number));
+		_tokens.insert(_tokens.end(), tokens.begin(), tokens.end());
+		tokens = _tokens;
+		return create_variable_declaration_ast(tokens);
+	}
 	else if (_is_function_call)
 		return create_function_call_ast(tokens, target);
 	else if (_is_incre)
@@ -1171,9 +1179,6 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 	}
 	else if (first_token->type == tok_l_paren || first_token->type == tok_r_paren) {
 		result = new ParenAST(first_token->identifier);
-	}
-	else if (first_token->type == tok_var) {
-		result = create_variable_declaration_ast(tokens);
 	}
 	else if (first_token->type == tok_identifier) {
 		result = create_identifier_ast(tokens, new IdentifierAST(first_token->identifier));

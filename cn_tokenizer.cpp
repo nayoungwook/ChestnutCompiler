@@ -60,8 +60,6 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			if (identifier == "for") type = tok_for;
 			if (identifier == "while") type = tok_while;
 
-			if (identifier == "var") type = tok_var;
-
 			if (identifier == "number") type = tok_number;
 			if (identifier == "int") type = tok_int;
 			if (identifier == "float") type = tok_float;

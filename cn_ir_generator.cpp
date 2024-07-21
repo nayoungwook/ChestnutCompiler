@@ -20,6 +20,11 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("image", 3));
 }
 
+void declare_builtin_variables() {
+	Data data = { 0, "shader" };
+	global_variable_symbol.insert(std::make_pair("default_shader", data));
+}
+
 void create_scope() {
 	std::vector<std::unordered_map<std::string, Data>>* temp = new std::vector<std::unordered_map<std::string, Data>>;
 	temp->push_back({});
