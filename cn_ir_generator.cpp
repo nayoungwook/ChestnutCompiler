@@ -93,7 +93,13 @@ Data* create_identifier_ast(std::string const& identifier, std::string& result, 
 	if (data == nullptr) {
 		if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
 			std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+			std::unordered_map<std::string, std::string>* _class_type = &class_member_variables_type->find(current_class)->second;
 			id = _class->find(identifier)->second;
+
+			data = new Data;
+			data->type = _class_type->find(identifier)->second;
+			data->id = id;
+
 			load_type = "@LOAD_CLASS";
 		}
 		else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
@@ -208,6 +214,7 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 
 		std::unordered_map<std::string, unsigned int> class_data = class_member_variables->find(data->type)->second;
 		std::unordered_map<std::string, std::string> access_modifier = class_member_variables_access_modifier->find(data->type)->second;
+		std::unordered_map<std::string, std::string> type = class_member_variables_type->find(data->type)->second;
 
 		if (access_modifier[identifier] != "public") {
 
@@ -291,6 +298,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 	case class_ast:
 	case scene_ast:
+	case object_ast:
 	{
 		ClassAST* class_ast = ((ClassAST*)ast);
 		scopes backup_scope = current_scope;
@@ -309,10 +317,12 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		std::unordered_map<std::string, unsigned int> temp1 = {};
 		std::unordered_map<std::string, std::string> temp2 = {};
+
 		class_member_functions->insert(std::make_pair(class_ast->name, temp1));
 		class_member_functions_access_modifier->insert(std::make_pair(class_ast->name, temp2));
 		class_member_variables->insert(std::make_pair(class_ast->name, temp1));
 		class_member_variables_access_modifier->insert(std::make_pair(class_ast->name, temp2));
+		class_member_variables_type->insert(std::make_pair(class_ast->name, temp2));
 
 		current_class = class_ast->name;
 
@@ -324,6 +334,38 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			object_type = "SCENE";
 		else if (ast->type == ast_type::object_ast)
 			object_type = "OBJECT";
+
+		if (ast->type == ast_type::object_ast) { // initialize member variables and functions of object.
+			std::unordered_map<std::string, unsigned int>* member_variables = &class_member_variables->find(current_class)->second;
+			std::unordered_map<std::string, unsigned int>* member_functions = &class_member_functions->find(current_class)->second;
+
+			std::unordered_map<std::string, std::string>* member_variables_access_modifier
+				= &class_member_variables_access_modifier->find(current_class)->second;
+			std::unordered_map<std::string, std::string>* member_variables_type
+				= &class_member_variables_type->find(current_class)->second;
+
+			std::unordered_map<std::string, std::string>* member_functions_access_modifier
+				= &class_member_functions_access_modifier->find(current_class)->second;
+
+			member_variables->insert(std::make_pair("position", 0));
+			member_variables_access_modifier->insert(std::make_pair("position", "public"));
+			member_variables_type->insert(std::make_pair("position", "vector"));
+
+			member_variables->insert(std::make_pair("width", 1));
+			member_variables_access_modifier->insert(std::make_pair("width", "public"));
+			member_variables_type->insert(std::make_pair("width", "number"));
+
+			member_variables->insert(std::make_pair("height", 2));
+			member_variables_access_modifier->insert(std::make_pair("height", "public"));
+			member_variables_type->insert(std::make_pair("height", "number"));
+
+			member_variables->insert(std::make_pair("rotation", 3));
+			member_variables_access_modifier->insert(std::make_pair("rotation", "public"));
+			member_variables_type->insert(std::make_pair("rotation", "number"));
+
+			member_functions->insert(std::make_pair("render", 0));
+			member_functions_access_modifier->insert(std::make_pair("render", "public"));
+		}
 
 		std::string line = object_type + " " + std::to_string(id) + " (" + class_ast->name + ") " + parent_type + " {";
 		append_data(result, line, indentation);
@@ -397,9 +439,13 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		case scope_class:
 			std::unordered_map<std::string, unsigned int>* _class = &class_member_functions->find(current_class)->second;
 			std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_functions_access_modifier->find(current_class)->second;
+			
+			// check if there's function with the same name.
+
 			id = (unsigned int)_class->size();
 			_class->insert(std::make_pair(function_name, id));
 			_class_access_modifier->insert(std::make_pair(function_name, function_declaration_ast->access_modifier));
+
 			break;
 		}
 
@@ -661,8 +707,19 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		VariableDeclarationAST* variable_declaration_ast = ((VariableDeclarationAST*)ast);
 
 		for (int i = 0; i < variable_declaration_ast->var_count; i++) {
-			std::string param = create_ir(variable_declaration_ast->declarations[i], 0);
-			append_data(result, param, indentation);
+
+			if (variable_declaration_ast->declarations[i] != nullptr) {
+				std::string param = create_ir(variable_declaration_ast->declarations[i], 0);
+				append_data(result, param, indentation);
+			}
+			else {
+				if (variable_declaration_ast->var_types[i] == "number") {
+					append_data(result, "@PUSH_NUMBER 0" + std::to_string(ast->line_number), indentation);
+				}
+				else {
+					append_data(result, "@PUSH_NULL " + std::to_string(ast->line_number), indentation);
+				}
+			}
 
 			std::string store_type = "";
 			unsigned int id = 0;
@@ -691,10 +748,12 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
 				std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_variables_access_modifier->find(current_class)->second;
+				std::unordered_map<std::string, std::string>* _class_type = &class_member_variables_type->find(current_class)->second;
 
 				id = (unsigned int)_class->size();
 				_class->insert(std::make_pair(variable_declaration_ast->names[i], id));
 				_class_access_modifier->insert(std::make_pair(variable_declaration_ast->names[i], variable_declaration_ast->access_modifier));
+				_class_type->insert(std::make_pair(variable_declaration_ast->names[i], variable_declaration_ast->var_types[i]));
 				break;
 			}
 

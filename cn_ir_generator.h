@@ -41,6 +41,9 @@ static std::unordered_map<std::string, unsigned int> class_symbol; // functions 
 static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_variables
 = new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber variables.
 
+static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_type
+= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // memeber variables.
+
 static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_access_modifier
 = new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber variables.
 
