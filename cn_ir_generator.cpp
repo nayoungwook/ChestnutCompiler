@@ -110,6 +110,35 @@ Data* create_identifier_ast(std::string const& identifier, std::string& result, 
 	return data;
 }
 
+std::string get_store_type(BaseAST* last_ast) {
+	std::string store_type = "";
+	unsigned int id = 0;
+	std::string identifier = ((IdentifierAST*)last_ast)->identifier;
+	if (last_ast->type == identifier_ast) {
+		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+
+		Data* data = get_local_variable(local_variable_symbol, identifier);
+
+		store_type = "@STORE_LOCAL";
+		id = get_local_variable_id(local_variable_symbol, identifier);
+
+		if (data == nullptr) {
+			if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
+				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+				id = _class->find(identifier)->second;
+				store_type = "@STORE_CLASS";
+			}
+			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+				data = &global_variable_symbol[identifier];
+				id = data->id;
+				store_type = "@STORE_GLOBAL";
+			}
+		}
+	}
+
+	return store_type;
+}
+
 void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 	BinExprAST* bin_expr_ast = ((BinExprAST*)ast);
 
@@ -143,7 +172,12 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 	}
 
 	if (last_ast == lhs) {
-		std::string lhs_data = create_ir(seracher, 0);
+		unsigned int id = 0;
+		std::string identifier = ((IdentifierAST*)last_ast)->identifier;
+		std::string store_type = get_store_type(last_ast);
+
+		lhs_data = store_type + " " + std::to_string(id)
+			+ " (" + identifier + ") " + std::to_string(ast->line_number);
 	}
 	else {
 		append_data(result, create_ir(lhs, 0), indentation);
@@ -173,6 +207,11 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 		}
 
 		std::unordered_map<std::string, unsigned int> class_data = class_member_variables->find(data->type)->second;
+		std::unordered_map<std::string, std::string> access_modifier = class_member_variables_access_modifier->find(data->type)->second;
+
+		if (access_modifier[identifier] != "public") {
+
+		}
 
 		lhs_data = "@STORE_ATTR " + std::to_string(class_data[identifier])
 			+ " (" + identifier + ") " + std::to_string(ast->line_number);
@@ -180,6 +219,7 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 	}
 
 	append_data(result, lhs_data, indentation);
+
 }
 
 const std::string create_ir(BaseAST* ast, int indentation) {
@@ -267,9 +307,12 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		}
 
 
-		std::unordered_map<std::string, unsigned int> temp = {};
-		class_member_functions->insert(std::make_pair(class_ast->name, temp));
-		class_member_variables->insert(std::make_pair(class_ast->name, temp));
+		std::unordered_map<std::string, unsigned int> temp1 = {};
+		std::unordered_map<std::string, std::string> temp2 = {};
+		class_member_functions->insert(std::make_pair(class_ast->name, temp1));
+		class_member_functions_access_modifier->insert(std::make_pair(class_ast->name, temp2));
+		class_member_variables->insert(std::make_pair(class_ast->name, temp1));
+		class_member_variables_access_modifier->insert(std::make_pair(class_ast->name, temp2));
 
 		current_class = class_ast->name;
 
@@ -353,8 +396,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			break;
 		case scope_class:
 			std::unordered_map<std::string, unsigned int>* _class = &class_member_functions->find(current_class)->second;
+			std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_functions_access_modifier->find(current_class)->second;
 			id = (unsigned int)_class->size();
 			_class->insert(std::make_pair(function_name, id));
+			_class_access_modifier->insert(std::make_pair(function_name, function_declaration_ast->access_modifier));
 			break;
 		}
 
@@ -645,8 +690,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				store_type = "@STORE_CLASS";
 
 				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+				std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_variables_access_modifier->find(current_class)->second;
+
 				id = (unsigned int)_class->size();
 				_class->insert(std::make_pair(variable_declaration_ast->names[i], id));
+				_class_access_modifier->insert(std::make_pair(variable_declaration_ast->names[i], variable_declaration_ast->access_modifier));
 				break;
 			}
 
@@ -717,6 +765,45 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			oper += " " + std::to_string(ast->line_number);
 
 			append_data(result, oper, indentation);
+		}
+		else if (bin_expr_ast->oper == "+=" ||
+			bin_expr_ast->oper == "-=" ||
+			bin_expr_ast->oper == "*=" ||
+			bin_expr_ast->oper == "/=" ||
+			bin_expr_ast->oper == "^=" ||
+			bin_expr_ast->oper == "%=") {
+
+			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			append_data(result, lhs, 0);
+
+			std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
+			append_data(result, rhs, 0);
+
+			std::string oper = "";
+
+			if (bin_expr_ast->oper == "+=")
+				oper = "@ADD";
+			else if (bin_expr_ast->oper == "-=")
+				oper = "@SUB";
+			else if (bin_expr_ast->oper == "*=")
+				oper = "@MUL";
+			else if (bin_expr_ast->oper == "/=")
+				oper = "@DIV";
+			else if (bin_expr_ast->oper == "%=")
+				oper = "@MOD";
+			else if (bin_expr_ast->oper == "^=")
+				oper = "@POW";
+
+			oper += " " + std::to_string(ast->line_number);
+
+			append_data(result, oper, indentation);
+
+			unsigned int id = 0;
+			std::string identifier = ((IdentifierAST*)bin_expr_ast->lhs)->identifier;
+			std::string store_type = get_store_type(bin_expr_ast->lhs);
+
+			append_data(result, store_type + " " + std::to_string(id)
+				+ " (" + identifier + ") " + std::to_string(ast->line_number), indentation);
 		}
 		else {
 			std::string oper = "";
