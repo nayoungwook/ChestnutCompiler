@@ -29,7 +29,7 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 static unsigned int label_id = 0;
 static std::string current_class = "";
 
-std::string get_store_type(BaseAST* last_ast);
+std::string get_store_type(unsigned int& id, BaseAST* last_ast);
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name);
 
 // declared based on serach priority
@@ -53,7 +53,6 @@ static std::unordered_map<std::string, std::unordered_map<std::string, unsigned 
 static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_functions_access_modifier
 = new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber functions.
 
-
 // declare builtin
 void declare_builtin_functions();
 
@@ -61,7 +60,7 @@ void append_data(std::string& target, std::string content, int indentation);
 const std::string create_ir(BaseAST* ast, int indentation);
 
 void create_assign_ir(BaseAST* ast, std::string& result, int indentation);
-Data* create_identifier_ast(std::string const& identifier, std::string& result, int line_number, int indentation);
+Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifier, std::string& result, int line_number, int indentation);
 
 void create_scope();
 void destroy_scope();
