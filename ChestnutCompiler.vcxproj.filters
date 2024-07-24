@@ -13,48 +13,66 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\parser">
+      <UniqueIdentifier>{aa3d4db6-5ecd-41a1-9672-9f9e23b6e91d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\tokenizer">
+      <UniqueIdentifier>{a4eaf64c-bb08-4a4e-ae03-971e9a800553}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\ir_generator">
+      <UniqueIdentifier>{4ee0e41a-62f1-4ad2-bd63-cde1dabf9452}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\parser">
+      <UniqueIdentifier>{54daeee8-bec5-49d9-b72d-5a1b5e90ee60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\tokenizer">
+      <UniqueIdentifier>{bf9f1f35-35c3-4a8e-a451-ba02e0f634a5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\ir_generator">
+      <UniqueIdentifier>{daae8bff-8758-4c59-b5d1-15f08d2944d5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="cn_tokenizer.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="ir_generator\cn_ir_generator.h">
+      <Filter>헤더 파일\ir_generator</Filter>
     </ClInclude>
-    <ClInclude Include="cn_token.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="parser\cn_parser.h">
+      <Filter>헤더 파일\parser</Filter>
     </ClInclude>
-    <ClInclude Include="cn_parser.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="parser\cn_ast.h">
+      <Filter>헤더 파일\parser</Filter>
     </ClInclude>
-    <ClInclude Include="cn_ir_generator.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="tokenizer\cn_tokenizer.h">
+      <Filter>헤더 파일\tokenizer</Filter>
+    </ClInclude>
+    <ClInclude Include="tokenizer\cn_token.h">
+      <Filter>헤더 파일\tokenizer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cn_tokenizer.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="cn_parser.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="cn_ast.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="sys_file.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="cn_ir_generator.cpp">
-      <Filter>소스 파일</Filter>
+    <ClCompile Include="parser\cn_ast.cpp">
+      <Filter>소스 파일\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="parser\cn_parser.cpp">
+      <Filter>소스 파일\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="tokenizer\cn_tokenizer.cpp">
+      <Filter>소스 파일\tokenizer</Filter>
+    </ClCompile>
+    <ClCompile Include="ir_generator\cn_ir_generator.cpp">
+      <Filter>소스 파일\ir_generator</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="cn_ast.h">
-      <Filter>헤더 파일</Filter>
-    </None>
     <None Include="sys_file.h">
       <Filter>헤더 파일</Filter>
     </None>

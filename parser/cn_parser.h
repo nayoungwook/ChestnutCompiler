@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include "cn_token.h"
-#include "cn_tokenizer.h"
+#include "../tokenizer/cn_token.h"
+#include "../tokenizer/cn_tokenizer.h"
 #include "cn_ast.h"
 
 

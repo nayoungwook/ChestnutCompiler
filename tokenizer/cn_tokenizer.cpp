@@ -1,4 +1,4 @@
-#include "cn_parser.h"
+#include "../parser/cn_parser.h"
 
 char get_char(std::string& line, int& _i) {
 	if (_i + 1 < line.length()) {

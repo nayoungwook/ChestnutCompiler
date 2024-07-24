@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <map>
-#include "cn_token.h"
+#include "../tokenizer/cn_token.h"
 #include <stack>
 #include <set>
 

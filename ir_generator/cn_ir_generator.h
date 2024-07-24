@@ -4,8 +4,8 @@
 #include <string>
 #include <unordered_map>
 #include <sstream>
-#include "cn_ast.h"
-#include "cn_parser.h"
+#include "../parser/cn_ast.h"
+#include "../parser/cn_parser.h"
 
 enum scopes {
 	scope_global, scope_local, scope_class,

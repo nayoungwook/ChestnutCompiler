@@ -127,22 +127,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="cn_ir_generator.h" />
-    <ClInclude Include="cn_parser.h" />
-    <ClInclude Include="cn_tokenizer.h" />
-    <ClInclude Include="cn_token.h" />
+    <ClInclude Include="ir_generator\cn_ir_generator.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="parser\cn_ast.h" />
+    <ClInclude Include="parser\cn_parser.h" />
+    <ClInclude Include="tokenizer\cn_token.h" />
+    <ClInclude Include="tokenizer\cn_tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cn_ast.cpp" />
-    <ClCompile Include="cn_ir_generator.cpp" />
-    <ClCompile Include="cn_parser.cpp" />
-    <ClCompile Include="cn_tokenizer.cpp" />
+    <ClCompile Include="ir_generator\cn_ir_generator.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser\cn_ast.cpp" />
+    <ClCompile Include="parser\cn_parser.cpp" />
     <ClCompile Include="sys_file.cpp" />
+    <ClCompile Include="tokenizer\cn_tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="cn_ast.h" />
     <None Include="sys_file.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
