@@ -28,6 +28,7 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 
 static unsigned int label_id = 0;
 static std::string current_class = "";
+static unsigned int current_class_id = 0;
 
 std::string get_store_type(unsigned int& id, BaseAST* last_ast);
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name);
@@ -55,6 +56,8 @@ static std::unordered_map<std::string, std::unordered_map<std::string, std::stri
 
 // declare builtin
 void declare_builtin_functions();
+
+std::pair<scopes, Data*> get_memory_scope(std::string const& identifier);
 
 void append_data(std::string& target, std::string content, int indentation);
 const std::string create_ir(BaseAST* ast, int indentation);

@@ -78,17 +78,14 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 	return result;
 }
 
-Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifier, std::string& result, int line_number, int indentation) {
-
-	std::string load_type = "";
-	unsigned int id = 0;
+std::pair<scopes, Data*> get_memory_scope(std::string const& identifier) {
 
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 	Data* data = get_local_variable(local_variable_symbol, identifier);
 
-	load_type = "@LOAD_LOCAL";
-	id = get_local_variable_id(local_variable_symbol, identifier);
+	scopes result = scopes::scope_local;
+	unsigned int id = get_local_variable_id(local_variable_symbol, identifier);
 
 	if (data == nullptr) {
 		if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
@@ -100,19 +97,65 @@ Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifi
 			data->type = _class_type->find(identifier)->second;
 			data->id = id;
 
-			load_type = "@LOAD_CLASS";
+			result = scopes::scope_class;
 		}
 		else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
 			data = &global_variable_symbol[identifier];
 			id = data->id;
-			load_type = "@LOAD_GLOBAL";
+			result = scopes::scope_global;
 		}
 	}
 
-	std::string line = load_type + " " + std::to_string(id)
-		+ " (" + identifier + ") " + std::to_string(line_number);
+	return std::make_pair(result, data);
+}
 
-	append_data(result, line, indentation);
+Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifier, std::string& result, int line_number, int indentation) {
+
+	std::string load_type = "";
+	unsigned int id = 0;
+
+	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+
+	Data* data = nullptr;
+	if (identifier == "this") {
+		data = new Data;
+		data->id = current_class_id;
+		data->type = current_class;
+
+		std::string line = "@PUSH_THIS " + std::to_string(line_number);
+
+		append_data(result, line, indentation);
+	}
+	else {
+		data = get_local_variable(local_variable_symbol, identifier);
+
+		load_type = "@LOAD_LOCAL";
+		id = get_local_variable_id(local_variable_symbol, identifier);
+
+		if (data == nullptr) {
+			if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
+				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+				std::unordered_map<std::string, std::string>* _class_type = &class_member_variables_type->find(current_class)->second;
+				id = _class->find(identifier)->second;
+
+				data = new Data;
+				data->type = _class_type->find(identifier)->second;
+				data->id = id;
+
+				load_type = "@LOAD_CLASS";
+			}
+			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+				data = &global_variable_symbol[identifier];
+				id = data->id;
+				load_type = "@LOAD_GLOBAL";
+			}
+		}
+
+		std::string line = load_type + " " + std::to_string(id)
+			+ " (" + identifier + ") " + std::to_string(line_number);
+
+		append_data(result, line, indentation);
+	}
 
 	BaseAST* searcher = identifier_ast;
 
@@ -131,8 +174,6 @@ Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifi
 
 				_attr = "@LOAD_ATTR " + std::to_string(id)
 					+ " (" + ident_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
-
-				append_data(result, _attr, indentation);
 			}
 			else { // case for @1 ( vector data )
 				std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
@@ -216,9 +257,11 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 	BaseAST* attr_target_ast = ((BinExprAST*)ast)->lhs;
 
 	while (searcher->attr != nullptr) {
-
 		if (searcher->attr->attr == nullptr) {
-			last_ast = searcher->attr;
+			if (searcher->attr->type == ast_type::bin_expr_ast)
+				last_ast = ((BinExprAST*)searcher->attr)->lhs;
+			else
+				last_ast = searcher->attr;
 			searcher->attr = nullptr;
 			break;
 		}
@@ -227,31 +270,44 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 		attr_target_ast = searcher;
 	}
 
-	Data* data = create_identifier_ast(((BinExprAST*)ast)->lhs, ((IdentifierAST*)((BinExprAST*)ast)->lhs)->identifier, result, ast->line_number, indentation);
-	if (data->type == "vector") { // vector attr
-		std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
-		unsigned int id = 0;
+	if (((BinExprAST*)ast)->lhs == last_ast) { // single node.
+		std::string identifier = ((IdentifierAST*)searcher)->identifier;
+		std::pair<scopes, Data*> scope_result = get_memory_scope(identifier);
+		std::string store_type = get_store_type(scope_result.second->id, searcher);
 
-		if (attr_identifier == "x")id = 0;
-		if (attr_identifier == "y")id = 1;
-		if (attr_identifier == "z")id = 2;
-
-		std::string line = "@STORE_ATTR " + std::to_string(id)
-			+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
-		append_data(result, line, indentation);
-	}
-	else {
-		std::unordered_map<std::string, unsigned int> member_variables = class_member_variables->find(data->type)->second;
-		std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
-
-		unsigned int id = member_variables.find(attr_identifier)->second;
-
-		std::string line = "@STORE_ATTR " + std::to_string(id)
-			+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
+		std::string line = store_type + " " + std::to_string(scope_result.second->id)
+			+ " (" + identifier + ") " + std::to_string(ast->line_number);
 
 		append_data(result, line, indentation);
 	}
 
+	if (((BinExprAST*)ast)->lhs != last_ast) { // attr, multiple nodes
+		Data* data = create_identifier_ast(((BinExprAST*)ast)->lhs, ((IdentifierAST*)((BinExprAST*)ast)->lhs)->identifier, result, ast->line_number, indentation);
+
+		if (data->type == "vector") { // vector attr
+			std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
+			unsigned int id = 0;
+
+			if (attr_identifier == "x") id = 0;
+			if (attr_identifier == "y") id = 1;
+			if (attr_identifier == "z") id = 2;
+
+			std::string line = "@STORE_ATTR " + std::to_string(id)
+				+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
+			append_data(result, line, indentation);
+		}
+		else {
+			std::unordered_map<std::string, unsigned int> member_variables = class_member_variables->find(data->type)->second;
+			std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
+
+			unsigned int id = member_variables.find(attr_identifier)->second;
+
+			std::string line = "@STORE_ATTR " + std::to_string(id)
+				+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
+
+			append_data(result, line, indentation);
+		}
+	}
 }
 
 const std::string create_ir(BaseAST* ast, int indentation) {
@@ -349,6 +405,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		class_member_variables_type->insert(std::make_pair(class_ast->name, temp2));
 
 		current_class = class_ast->name;
+		current_class_id = id;
 
 		std::string object_type;
 
