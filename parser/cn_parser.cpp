@@ -604,7 +604,7 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 
 	ast->functions = function_asts;
 	ast->variables = variable_asts;
-	
+
 	parsed_class_data.insert(std::make_pair(name, ast));
 
 	std::vector<Token*>().swap(body_tokens);
@@ -615,40 +615,6 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
-
-	std::unordered_map<std::string, unsigned int>* member_variables = &class_member_variables->find(current_class)->second;
-	std::unordered_map<std::string, unsigned int>* member_functions = &class_member_functions->find(current_class)->second;
-
-	std::unordered_map<std::string, std::string>* member_variables_access_modifier
-		= &class_member_variables_access_modifier->find(current_class)->second;
-	std::unordered_map<std::string, std::string>* member_variables_type
-		= &class_member_variables_type->find(current_class)->second;
-
-	std::unordered_map<std::string, std::string>* member_functions_access_modifier
-		= &class_member_functions_access_modifier->find(current_class)->second;
-
-	member_variables->insert(std::make_pair("position", 0));
-	member_variables_access_modifier->insert(std::make_pair("position", "public"));
-	member_variables_type->insert(std::make_pair("position", "vector"));
-
-	member_variables->insert(std::make_pair("width", 1));
-	member_variables_access_modifier->insert(std::make_pair("width", "public"));
-	member_variables_type->insert(std::make_pair("width", "number"));
-
-	member_variables->insert(std::make_pair("height", 2));
-	member_variables_access_modifier->insert(std::make_pair("height", "public"));
-	member_variables_type->insert(std::make_pair("height", "number"));
-
-	member_variables->insert(std::make_pair("rotation", 3));
-	member_variables_access_modifier->insert(std::make_pair("rotation", "public"));
-	member_variables_type->insert(std::make_pair("rotation", "number"));
-
-	member_variables->insert(std::make_pair("sprite", 4));
-	member_variables_access_modifier->insert(std::make_pair("sprite", "public"));
-	member_variables_type->insert(std::make_pair("sprite", "string"));
-
-	member_functions->insert(std::make_pair("render", 0));
-	member_functions_access_modifier->insert(std::make_pair("render", "public"));
 
 	std::string parent_type = "";
 	if (check_token(tokens)->type == tok_extends) {

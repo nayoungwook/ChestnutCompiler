@@ -53,6 +53,34 @@ Data* get_local_variable(std::vector<std::unordered_map<std::string, Data>>* are
 	return nullptr;
 }
 
+Data* get_data(std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol, std::string const& identifier) {
+	Data* data = get_local_variable(local_variable_symbol, identifier);
+
+	scopes result = scopes::scope_local;
+	unsigned int id = get_local_variable_id(local_variable_symbol, identifier);
+
+	if (data == nullptr) {
+		if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
+			std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
+			std::unordered_map<std::string, std::string>* _class_type = &class_member_variables_type->find(current_class)->second;
+			id = _class->find(identifier)->second;
+
+			data = new Data;
+			data->type = _class_type->find(identifier)->second;
+			data->id = id;
+
+			result = scopes::scope_class;
+		}
+		else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+			data = &global_variable_symbol[identifier];
+			id = data->id;
+			result = scopes::scope_global;
+		}
+	}
+
+	return data;
+}
+
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
 	int result = 0;
 	for (int i = 0; i < area->size(); i++) {
@@ -197,6 +225,10 @@ Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifi
 		}
 		else if (searcher->attr->type == function_call_ast) {
 			FunctionCallAST* func_call = (FunctionCallAST*)searcher->attr;
+			IdentifierAST* ident_ast = (IdentifierAST*)searcher;
+
+			Data* data = get_data(local_variable_symbol, ident_ast->identifier);
+
 			std::unordered_map<std::string, unsigned int> _class = class_member_functions->find(data->type)->second;
 			unsigned int id = _class.find(func_call->function_name)->second;
 
@@ -401,6 +433,43 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		unsigned int id = class_symbol.size();
 		class_symbol.insert(std::make_pair(class_ast->name, id));
 
+		if (ast->type == object_ast) {
+			std::string name = class_ast->name;
+			std::unordered_map<std::string, unsigned int>* member_variables = &class_member_variables->find(name)->second;
+			std::unordered_map<std::string, unsigned int>* member_functions = &class_member_functions->find(name)->second;
+
+			std::unordered_map<std::string, std::string>* member_variables_access_modifier
+				= &class_member_variables_access_modifier->find(name)->second;
+			std::unordered_map<std::string, std::string>* member_variables_type
+				= &class_member_variables_type->find(name)->second;
+
+			std::unordered_map<std::string, std::string>* member_functions_access_modifier
+				= &class_member_functions_access_modifier->find(name)->second;
+
+			member_variables->insert(std::make_pair("position", 0));
+			member_variables_access_modifier->insert(std::make_pair("position", "public"));
+			member_variables_type->insert(std::make_pair("position", "vector"));
+
+			member_variables->insert(std::make_pair("width", 1));
+			member_variables_access_modifier->insert(std::make_pair("width", "public"));
+			member_variables_type->insert(std::make_pair("width", "number"));
+
+			member_variables->insert(std::make_pair("height", 2));
+			member_variables_access_modifier->insert(std::make_pair("height", "public"));
+			member_variables_type->insert(std::make_pair("height", "number"));
+
+			member_variables->insert(std::make_pair("rotation", 3));
+			member_variables_access_modifier->insert(std::make_pair("rotation", "public"));
+			member_variables_type->insert(std::make_pair("rotation", "number"));
+
+			member_variables->insert(std::make_pair("sprite", 4));
+			member_variables_access_modifier->insert(std::make_pair("sprite", "public"));
+			member_variables_type->insert(std::make_pair("sprite", "string"));
+
+			member_functions->insert(std::make_pair("render", 0));
+			member_functions_access_modifier->insert(std::make_pair("render", "public"));
+		}
+
 		std::string parent_type;
 		if (class_ast->parent_type == "")
 			parent_type = "-1";
@@ -424,10 +493,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			object_type = "SCENE";
 		else if (ast->type == ast_type::object_ast)
 			object_type = "OBJECT";
-
-		if (ast->type == ast_type::object_ast) { // initialize member variables and functions of object.
-
-		}
 
 		create_scope();
 		std::string line = object_type + " " + std::to_string(id) + " (" + class_ast->name + ") " + parent_type + " {";
@@ -524,8 +589,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				for (int i = 0; i < super_member_functions.size(); i++) {
 					FunctionDeclarationAST* _func = ((FunctionDeclarationAST*)super_member_functions[i]);
 
-					_class->insert(std::make_pair(_func->function_name, i));
-					_class_access_modifier->insert(std::make_pair(_func->function_name, _func->access_modifier));
+					if (_class->find(_func->function_name) == _class->end()) {
+						_class->insert(std::make_pair(_func->function_name, i + (unsigned int)_class->size()));
+						_class_access_modifier->insert(std::make_pair(_func->function_name, _func->access_modifier));
+					}
 				}
 
 			}
@@ -793,9 +860,16 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 					for (int i = 0; i < super_member_variables.size(); i++) {
 						VariableDeclarationAST* _var = ((VariableDeclarationAST*)super_member_variables[i]);
 
-						_class->insert(std::make_pair(_var->names[0], i));
-						_class_access_modifier->insert(std::make_pair(_var->names[0], _var->access_modifier));
-						_class_type->insert(std::make_pair(_var->names[0], _var->var_types[0]));
+						if (_class->find(_var->names[0]) != _class->end()) {
+							_class->find(_var->names[0])->second = i + (unsigned int)_class->size();
+							_class_access_modifier->find(_var->names[0])->second = _var->access_modifier;
+							_class_type->find(_var->names[0])->second = _var->var_types[0];
+						}
+						else {
+							_class->insert(std::make_pair(_var->names[0], i + (unsigned int)_class->size()));
+							_class_access_modifier->insert(std::make_pair(_var->names[0], _var->access_modifier));
+							_class_type->insert(std::make_pair(_var->names[0], _var->var_types[0]));
+						}
 					}
 
 				}

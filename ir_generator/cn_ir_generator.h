@@ -45,6 +45,8 @@ static std::unordered_map<std::string, Data> global_variable_symbol; // function
 static std::stack<
 	std::vector<std::unordered_map<std::string, Data>>*> local_variable_symbols;// functions that exist in builtin area.
 Data* get_local_variable(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
+Data* get_data(std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol, std::string const& identifier);
+
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area);
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
 

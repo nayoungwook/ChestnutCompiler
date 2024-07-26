@@ -30,7 +30,7 @@ int main(int argc, char* args[]) {
 		}
 
 		for (BaseAST* ast : parsed_asts)
-			result += create_ir(ast, 0);
+			result += create_ir(ast, 0) + "\n";
 
 		std::cout << "<main.cn compiled>" << std::endl;
 		std::cout << result;
