@@ -19,14 +19,18 @@ int main(int argc, char* args[]) {
 			}
 		}
 
+		std::vector<BaseAST*> parsed_asts;
+
 		std::string result = "";
 		while (!tokens.empty()) {
 			if (tokens.size() == 0) continue;
 
-			BaseAST* ast = parse(tokens);
+			parsed_asts.push_back(parse(tokens));
 
-			result += create_ir(ast, 0);
 		}
+
+		for (BaseAST* ast : parsed_asts)
+			result += create_ir(ast, 0);
 
 		std::cout << "<main.cn compiled>" << std::endl;
 		std::cout << result;

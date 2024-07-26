@@ -1,5 +1,7 @@
 #include "cn_ir_generator.h"
 
+std::unordered_map<std::string, ClassAST*> parsed_class_data;
+
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name) {
 	return area.find(name) != area.end();
 }
@@ -311,6 +313,7 @@ void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
 }
 
 const std::string create_ir(BaseAST* ast, int indentation) {
+
 	std::string result = "";
 
 	switch (ast->type) {
@@ -384,6 +387,16 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		ClassAST* class_ast = ((ClassAST*)ast);
 		scopes backup_scope = current_scope;
 		current_scope = scope_class;
+		current_class = class_ast->name;
+
+		std::unordered_map<std::string, unsigned int> temp1 = {};
+		std::unordered_map<std::string, std::string> temp2 = {};
+
+		class_member_functions->insert(std::make_pair(current_class, temp1));
+		class_member_functions_access_modifier->insert(std::make_pair(current_class, temp2));
+		class_member_variables->insert(std::make_pair(current_class, temp1));
+		class_member_variables_access_modifier->insert(std::make_pair(current_class, temp2));
+		class_member_variables_type->insert(std::make_pair(current_class, temp2));
 
 		unsigned int id = class_symbol.size();
 		class_symbol.insert(std::make_pair(class_ast->name, id));
@@ -395,14 +408,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			parent_type = std::to_string(class_symbol[class_ast->parent_type]);
 		}
 
-		std::unordered_map<std::string, unsigned int> temp1 = {};
-		std::unordered_map<std::string, std::string> temp2 = {};
-
-		class_member_functions->insert(std::make_pair(class_ast->name, temp1));
-		class_member_functions_access_modifier->insert(std::make_pair(class_ast->name, temp2));
-		class_member_variables->insert(std::make_pair(class_ast->name, temp1));
-		class_member_variables_access_modifier->insert(std::make_pair(class_ast->name, temp2));
-		class_member_variables_type->insert(std::make_pair(class_ast->name, temp2));
+		if (parent_type == "-1")
+			parent_symbol.insert(std::make_pair(class_ast->name, "-1"));
+		else
+			parent_symbol.insert(std::make_pair(class_ast->name, class_ast->parent_type));
 
 		current_class = class_ast->name;
 		current_class_id = id;
@@ -417,39 +426,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			object_type = "OBJECT";
 
 		if (ast->type == ast_type::object_ast) { // initialize member variables and functions of object.
-			std::unordered_map<std::string, unsigned int>* member_variables = &class_member_variables->find(current_class)->second;
-			std::unordered_map<std::string, unsigned int>* member_functions = &class_member_functions->find(current_class)->second;
 
-			std::unordered_map<std::string, std::string>* member_variables_access_modifier
-				= &class_member_variables_access_modifier->find(current_class)->second;
-			std::unordered_map<std::string, std::string>* member_variables_type
-				= &class_member_variables_type->find(current_class)->second;
-
-			std::unordered_map<std::string, std::string>* member_functions_access_modifier
-				= &class_member_functions_access_modifier->find(current_class)->second;
-
-			member_variables->insert(std::make_pair("position", 0));
-			member_variables_access_modifier->insert(std::make_pair("position", "public"));
-			member_variables_type->insert(std::make_pair("position", "vector"));
-
-			member_variables->insert(std::make_pair("width", 1));
-			member_variables_access_modifier->insert(std::make_pair("width", "public"));
-			member_variables_type->insert(std::make_pair("width", "number"));
-
-			member_variables->insert(std::make_pair("height", 2));
-			member_variables_access_modifier->insert(std::make_pair("height", "public"));
-			member_variables_type->insert(std::make_pair("height", "number"));
-
-			member_variables->insert(std::make_pair("rotation", 3));
-			member_variables_access_modifier->insert(std::make_pair("rotation", "public"));
-			member_variables_type->insert(std::make_pair("rotation", "number"));
-
-			member_variables->insert(std::make_pair("sprite", 4));
-			member_variables_access_modifier->insert(std::make_pair("sprite", "public"));
-			member_variables_type->insert(std::make_pair("sprite", "string"));
-
-			member_functions->insert(std::make_pair("render", 0));
-			member_functions_access_modifier->insert(std::make_pair("render", "public"));
 		}
 
 		create_scope();
@@ -537,9 +514,24 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			std::unordered_map<std::string, unsigned int>* _class = &class_member_functions->find(current_class)->second;
 			std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_functions_access_modifier->find(current_class)->second;
 
-			// check if there's function with the same name.
+			std::string searcher = current_class;
 
-			id = (unsigned int)_class->size();
+			while (parent_symbol[searcher] != "-1") {
+				searcher = parent_symbol[searcher];
+
+				std::vector<BaseAST*> super_member_functions = parsed_class_data[searcher]->functions;
+
+				for (int i = 0; i < super_member_functions.size(); i++) {
+					FunctionDeclarationAST* _func = ((FunctionDeclarationAST*)super_member_functions[i]);
+
+					_class->insert(std::make_pair(_func->function_name, i));
+					_class_access_modifier->insert(std::make_pair(_func->function_name, _func->access_modifier));
+				}
+
+			}
+
+			// check if there's function with the same name.
+			id += (unsigned int)_class->size();
 			_class->insert(std::make_pair(function_name, id));
 			_class_access_modifier->insert(std::make_pair(function_name, function_declaration_ast->access_modifier));
 
@@ -791,10 +783,29 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				std::unordered_map<std::string, std::string>* _class_access_modifier = &class_member_variables_access_modifier->find(current_class)->second;
 				std::unordered_map<std::string, std::string>* _class_type = &class_member_variables_type->find(current_class)->second;
 
+				std::string searcher = current_class;
+
+				while (parent_symbol[searcher] != "-1") {
+					searcher = parent_symbol[searcher];
+
+					std::vector<BaseAST*> super_member_variables = parsed_class_data[searcher]->variables;
+
+					for (int i = 0; i < super_member_variables.size(); i++) {
+						VariableDeclarationAST* _var = ((VariableDeclarationAST*)super_member_variables[i]);
+
+						_class->insert(std::make_pair(_var->names[0], i));
+						_class_access_modifier->insert(std::make_pair(_var->names[0], _var->access_modifier));
+						_class_type->insert(std::make_pair(_var->names[0], _var->var_types[0]));
+					}
+
+				}
+
 				id = (unsigned int)_class->size();
+
 				_class->insert(std::make_pair(variable_declaration_ast->names[i], id));
 				_class_access_modifier->insert(std::make_pair(variable_declaration_ast->names[i], variable_declaration_ast->access_modifier));
 				_class_type->insert(std::make_pair(variable_declaration_ast->names[i], variable_declaration_ast->var_types[i]));
+
 				break;
 			}
 
@@ -933,6 +944,20 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case function_call_ast: {
 		FunctionCallAST* function_call_ast = ((FunctionCallAST*)ast);
 		std::string function_name = function_call_ast->function_name;
+
+		if (function_name == "super") {
+			std::string line = "@SUPER_CALL " + std::to_string(function_call_ast->parameters.size())
+				+ " " + std::to_string(ast->line_number);
+
+			for (int i = function_call_ast->parameters.size() - 1; i >= 0; i--) {
+				std::string param = create_ir(function_call_ast->parameters[i], 0);
+				append_data(result, param, indentation);
+			}
+
+			append_data(result, line, 1);
+
+			break;
+		}
 
 		unsigned int function_id = -1;
 		std::string call_type = "";

@@ -7,6 +7,28 @@
 #include "../parser/cn_ast.h"
 #include "../parser/cn_parser.h"
 
+// declared based on serach priority
+static std::unordered_map<std::string, unsigned int> global_function_symbol; // functions that exist in global area.
+static std::unordered_map<std::string, unsigned int> builtin_function_symbol; // functions that exist in builtin area.
+
+static std::unordered_map<std::string, unsigned int> class_symbol; // functions that exist in builtin area.
+static std::unordered_map<std::string, std::string> parent_symbol; // functions that exist in builtin area.
+
+static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_variables
+= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber variables.
+
+static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_type
+= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // memeber variables.
+
+static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_access_modifier
+= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber variables.
+
+static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_functions
+= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber functions.
+
+static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_functions_access_modifier
+= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber functions.
+
 enum scopes {
 	scope_global, scope_local, scope_class,
 };
@@ -33,33 +55,13 @@ static unsigned int current_class_id = 0;
 std::string get_store_type(unsigned int& id, BaseAST* last_ast);
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name);
 
-// declared based on serach priority
-static std::unordered_map<std::string, unsigned int> global_function_symbol; // functions that exist in global area.
-static std::unordered_map<std::string, unsigned int> builtin_function_symbol; // functions that exist in builtin area.
-
-static std::unordered_map<std::string, unsigned int> class_symbol; // functions that exist in builtin area.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_variables
-= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber variables.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_type
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // memeber variables.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_access_modifier
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber variables.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_functions
-= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber functions.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_functions_access_modifier
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber functions.
-
 // declare builtin
 void declare_builtin_functions();
 
 std::pair<scopes, Data*> get_memory_scope(std::string const& identifier);
 
 void append_data(std::string& target, std::string content, int indentation);
+
 const std::string create_ir(BaseAST* ast, int indentation);
 
 void create_assign_ir(BaseAST* ast, std::string& result, int indentation);
