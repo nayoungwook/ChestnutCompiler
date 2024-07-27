@@ -17,17 +17,11 @@ static std::unordered_map<std::string, std::string> parent_symbol; // functions 
 static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_variables
 = new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber variables.
 
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_type
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // memeber variables.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_variables_access_modifier
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber variables.
-
 static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_functions
 = new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber functions.
 
-static std::unordered_map<std::string, std::unordered_map<std::string, std::string>>* class_member_functions_access_modifier
-= new std::unordered_map<std::string, std::unordered_map<std::string, std::string>>; // access modifier of memeber functions.
+std::pair<std::string, std::string> get_member_variable(std::string const& class_name, std::string const& variable_name);
+FunctionDeclarationAST* get_member_function(std::string const& class_name, std::string const& function_decl);
 
 enum scopes {
 	scope_global, scope_local, scope_class,
@@ -45,7 +39,6 @@ static std::unordered_map<std::string, Data> global_variable_symbol; // function
 static std::stack<
 	std::vector<std::unordered_map<std::string, Data>>*> local_variable_symbols;// functions that exist in builtin area.
 Data* get_local_variable(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
-Data* get_data(std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol, std::string const& identifier);
 
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area);
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
@@ -60,7 +53,7 @@ inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> 
 // declare builtin
 void declare_builtin_functions();
 
-std::pair<scopes, Data*> get_memory_scope(std::string const& identifier);
+std::pair<scopes, Data*> get_memory_from_scope(std::string const& identifier);
 
 void append_data(std::string& target, std::string content, int indentation);
 

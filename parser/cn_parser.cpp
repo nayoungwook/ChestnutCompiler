@@ -630,6 +630,14 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	ObjectAST* ast = new ObjectAST(name, parent_type);
 
+	std::vector<std::string> _type = { "vector", "number", "number", "number", "texture" };
+	std::vector<std::string> _name = { "position", "width", "height", "rotation", "sprite" };
+	std::vector<BaseAST*> vector_decl = { new NumberAST("0"), new NumberAST("0") };
+
+	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST("100") , new NumberAST("100"), new NumberAST("0"), new IdentifierAST("null") };
+
+	VariableDeclarationAST* _position_decl = new VariableDeclarationAST(_type, _name, _decl, _decl.size());
+
 	std::map<std::string, bool> functions_satisfied =
 	{
 		std::make_pair("init", false),
