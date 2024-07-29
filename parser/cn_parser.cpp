@@ -569,6 +569,28 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 }
 
 extern std::unordered_map<std::string, ClassAST*> parsed_class_data;
+extern std::unordered_map<std::string, unsigned int> class_id;
+extern std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
+extern std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
+
+void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::string, MemberVariableData>& member_variables) {
+	for (int i = 0; i < class_ast->variables.size(); i++) {
+		VariableDeclarationAST* ast = (VariableDeclarationAST*)class_ast->variables[i];
+
+		for (int j = 0; j < ast->var_count; j++) {
+			MemberVariableData data;
+
+			std::string name = ast->names[j];
+
+			data.name = name;
+			data.access_modifier = ast->access_modifier;
+			data.id = member_variables.size();
+			data.type = ast->var_types[j];
+
+			member_variables.insert(std::make_pair(name, data));
+		}
+	}
+}
 
 ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
@@ -606,6 +628,26 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 	ast->variables = variable_asts;
 
 	parsed_class_data.insert(std::make_pair(name, ast));
+	class_id.insert(std::make_pair(name, class_id.size()));
+
+	std::unordered_map<std::string, MemberFunctionData> member_functions;
+	for (int i = 0; i < function_asts.size(); i++) {
+		FunctionDeclarationAST* ast = (FunctionDeclarationAST*)function_asts[i];
+
+		MemberFunctionData data;
+		std::string name = ast->function_name;
+
+		data.access_modifier = ast->access_modifier;
+		data.name = name;
+		data.id = i;
+
+		member_functions.insert(std::make_pair(name, data));
+	}
+	member_function_data.insert(std::make_pair(name, member_functions));
+
+	std::unordered_map<std::string, MemberVariableData> member_variables;
+	assign_member_variable_data(ast, member_variables);
+	member_variable_data.insert(std::make_pair(name, member_variables));
 
 	std::vector<Token*>().swap(body_tokens);
 
@@ -690,8 +732,81 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 	ast->variables = variable_asts;
 
 	parsed_class_data.insert(std::make_pair(name, ast));
+	class_id.insert(std::make_pair(name, class_id.size()));
 
 	std::vector<Token*>().swap(body_tokens);
+
+	return ast;
+}
+
+SceneAST* create_scene_ast(std::vector<Token*>& tokens) {
+
+	std::string name = pull_token_and_expect(tokens, -1)->identifier;
+
+	std::string parent_type = "";
+	if (check_token(tokens)->type == tok_extends) {
+		pull_token_and_expect(tokens, tok_extends);
+		parent_type = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	}
+
+	std::vector<Token*> body_tokens = get_block_tokens(tokens);
+
+	std::vector<BaseAST*> function_asts;
+	std::vector<BaseAST*> variable_asts;
+
+	SceneAST* ast = new SceneAST(name, parent_type);
+	std::map<std::string, bool> functions_satisfied =
+	{
+		std::make_pair("init", false),
+		std::make_pair("tick", false),
+		std::make_pair("render", false),
+	};
+
+	while (!body_tokens.empty()) {
+		BaseAST* _ast = parse(body_tokens);
+
+		if (_ast->type == variable_declaration_ast)
+			variable_asts.push_back(_ast);
+		if (_ast->type == function_declaration_ast) {
+			function_asts.push_back(_ast);
+
+			if (((FunctionDeclarationAST*)_ast)->access_modifier == "public") {
+				if (!((FunctionDeclarationAST*)_ast)->is_static) {
+					if (
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "init" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "tick" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "render"
+						) {
+						functions_satisfied[dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name] = true;
+					}
+				}
+			}
+		}
+		if (_ast->type == constructor_declaration_ast)
+			ast->constructor.push_back((ConstructorDeclarationAST*)_ast);
+	}
+
+	if (ast->constructor.size() == 0) {
+		std::vector<VariableDeclarationAST*> parameters;
+		ast->constructor.push_back(new ConstructorDeclarationAST(parameters));
+	}
+
+	ast->functions = function_asts;
+	ast->variables = variable_asts;
+
+	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
+		if (!satisfied.second) {
+			std::vector<VariableDeclarationAST*> parameters;
+			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
+			function_declaration_ast->access_modifier = "public";
+			ast->functions.push_back(function_declaration_ast);
+		}
+	}
+
+	std::vector<Token*>().swap(body_tokens);
+
+	parsed_class_data.insert(std::make_pair(name, ast));
+	class_id.insert(std::make_pair(name, class_id.size()));
 
 	return ast;
 }
@@ -1000,77 +1115,6 @@ NotAST* create_not_ast(std::vector<Token*>& tokens) {
 	result = new NotAST(expression);
 
 	return result;
-}
-
-SceneAST* create_scene_ast(std::vector<Token*>& tokens) {
-
-	std::string name = pull_token_and_expect(tokens, -1)->identifier;
-
-	std::string parent_type = "";
-	if (check_token(tokens)->type == tok_extends) {
-		pull_token_and_expect(tokens, tok_extends);
-		parent_type = pull_token_and_expect(tokens, tok_identifier)->identifier;
-	}
-
-	std::vector<Token*> body_tokens = get_block_tokens(tokens);
-
-	std::vector<BaseAST*> function_asts;
-	std::vector<BaseAST*> variable_asts;
-
-	SceneAST* ast = new SceneAST(name, parent_type);
-	std::map<std::string, bool> functions_satisfied =
-	{
-		std::make_pair("init", false),
-		std::make_pair("tick", false),
-		std::make_pair("render", false),
-	};
-
-	while (!body_tokens.empty()) {
-		BaseAST* _ast = parse(body_tokens);
-
-		if (_ast->type == variable_declaration_ast)
-			variable_asts.push_back(_ast);
-		if (_ast->type == function_declaration_ast) {
-			function_asts.push_back(_ast);
-
-			if (((FunctionDeclarationAST*)_ast)->access_modifier == "public") {
-				if (!((FunctionDeclarationAST*)_ast)->is_static) {
-					if (
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "init" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "tick" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "render"
-						) {
-						functions_satisfied[dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name] = true;
-					}
-				}
-			}
-		}
-		if (_ast->type == constructor_declaration_ast)
-			ast->constructor.push_back((ConstructorDeclarationAST*)_ast);
-	}
-
-	if (ast->constructor.size() == 0) {
-		std::vector<VariableDeclarationAST*> parameters;
-		ast->constructor.push_back(new ConstructorDeclarationAST(parameters));
-	}
-
-	ast->functions = function_asts;
-	ast->variables = variable_asts;
-
-	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
-		if (!satisfied.second) {
-			std::vector<VariableDeclarationAST*> parameters;
-			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
-			function_declaration_ast->access_modifier = "public";
-			ast->functions.push_back(function_declaration_ast);
-		}
-	}
-
-	std::vector<Token*>().swap(body_tokens);
-
-	parsed_class_data.insert(std::make_pair(name, ast));
-
-	return ast;
 }
 
 VectorDeclarationAST* create_vector_declaration_ast(std::vector<Token*>& tokens) {

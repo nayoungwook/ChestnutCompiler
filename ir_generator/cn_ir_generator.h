@@ -11,15 +11,6 @@
 static std::unordered_map<std::string, unsigned int> global_function_symbol; // functions that exist in global area.
 static std::unordered_map<std::string, unsigned int> builtin_function_symbol; // functions that exist in builtin area.
 
-static std::unordered_map<std::string, unsigned int> class_symbol; // functions that exist in builtin area.
-static std::unordered_map<std::string, std::string> parent_symbol; // functions that exist in builtin area.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_variables
-= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber variables.
-
-static std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>* class_member_functions
-= new std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>>; // memeber functions.
-
 std::pair<std::string, std::string> get_member_variable(std::string const& class_name, std::string const& variable_name);
 FunctionDeclarationAST* get_member_function(std::string const& class_name, std::string const& function_decl);
 
@@ -33,34 +24,37 @@ struct _Data {
 	unsigned int id;
 	std::string type;
 } typedef Data;
+Data get_data_of_variable(std::string const& identifier);
 
 static std::unordered_map<std::string, Data> global_variable_symbol; // functions that exist in global area.
+static std::stack<std::vector<std::unordered_map<std::string, Data>>*> local_variable_symbols;// functions that exist in local area.
 
-static std::stack<
-	std::vector<std::unordered_map<std::string, Data>>*> local_variable_symbols;// functions that exist in builtin area.
-Data* get_local_variable(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
-
-unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area);
+unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area);
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier);
+
+unsigned int get_parent_member_variable_size(std::string const& class_name);
+unsigned int get_parent_member_function_size(std::string const& class_name);
+
+std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs_rhs);
 
 static unsigned int label_id = 0;
 static std::string current_class = "";
 static unsigned int current_class_id = 0;
 
-std::string get_store_type(unsigned int& id, BaseAST* last_ast);
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name);
 
 // declare builtin
 void declare_builtin_functions();
 
-std::pair<scopes, Data*> get_memory_from_scope(std::string const& identifier);
-
 void append_data(std::string& target, std::string content, int indentation);
 
 const std::string create_ir(BaseAST* ast, int indentation);
 
-void create_assign_ir(BaseAST* ast, std::string& result, int indentation);
-Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifier, std::string& result, int line_number, int indentation);
+scopes get_scope_of_function(std::string const& identifier);
+scopes get_scope_of_identifier(std::string const& identifier);
+
+std::string create_assign_ir(BaseAST* ast, std::string& result, int indentation);
+std::string create_identifier_ir(IdentifierAST* identifier_ast);
 
 void create_scope();
 void destroy_scope();

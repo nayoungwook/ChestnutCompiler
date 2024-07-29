@@ -9,3 +9,13 @@
 BaseAST* parse(std::vector<Token*>& tokens);
 Token* pull_token_and_expect(std::vector<Token*>& tokens, int token_type);
 Token* check_token(std::vector<Token*>& tokens);
+
+struct MemberFunctionData {
+	unsigned int id;
+	std::string name, access_modifier;
+};
+
+struct MemberVariableData {
+	unsigned int id;
+	std::string name, access_modifier, type;
+};

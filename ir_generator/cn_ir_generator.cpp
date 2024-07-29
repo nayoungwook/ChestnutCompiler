@@ -1,6 +1,9 @@
 #include "cn_ir_generator.h"
 
 std::unordered_map<std::string, ClassAST*> parsed_class_data;
+std::unordered_map<std::string, unsigned int> class_id;
+std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
+std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
 
 inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name) {
 	return area.find(name) != area.end();
@@ -44,51 +47,154 @@ const std::string integer_to_hex(int i) {
 	return result;
 }
 
-Data* get_local_variable(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
-	for (int i = 0; i < area->size(); i++) {
-		if (area->at(i).find(obj_identifier) != area->at(i).end()) {
-			return &area->at(i).find(obj_identifier)->second;
-		}
+scopes get_scope_of_identifier(std::string const& identifier) {
+	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+	unsigned int id = get_local_variable_id(local_variable_symbol, identifier);
+
+	if (identifier == "this") {
+		return scope_local;
 	}
-	return nullptr;
-}
-
-// type , access_modifier
-std::pair<std::string, std::string>
-get_member_variable(std::string const& class_name, std::string const& variable_name) {
-	ClassAST* class_ast = parsed_class_data[class_name];
-
-	for (int i = 0; i < class_ast->variables.size(); i++) {
-		VariableDeclarationAST* var_decl = (VariableDeclarationAST*)class_ast->variables[i];
-
-		for (int j = 0; j < var_decl->names.size(); j++) {
-			if (var_decl->names[j] == variable_name) {
-				return std::make_pair(var_decl->var_types[j], var_decl->access_modifier);
+	else {
+		if (id == -1) {
+			if (member_variable_data[current_class].find(identifier) != member_variable_data[current_class].end()) {
+				return scope_class;
+			}
+			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+				return scope_global;
 			}
 		}
+		else {
+			return scope_local;
+		}
 	}
 
-	if (class_ast->parent_type != "") {
-		return get_member_variable(class_ast->parent_type, variable_name);
-	}
-
-	std::cout << "Error at cn_ir_generator.cpp" << std::endl;
+	std::cout << "Failed to find identifier : " << identifier << " at this scope." << std::endl;
 	exit(EXIT_FAILURE);
 }
 
-// type , access_modifier
-FunctionDeclarationAST* get_member_function(std::string const& class_name, std::string const& function_decl) {
-	ClassAST* class_ast = parsed_class_data[class_name];
+scopes get_scope_of_function(std::string const& identifier) {
+	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
-	for (int i = 0; i < class_ast->functions.size(); i++) {
-		FunctionDeclarationAST* func_decl = (FunctionDeclarationAST*)class_ast->functions[i];
-
-		if (func_decl->function_name == function_decl) {
-			return func_decl;
-		}
+	if (member_function_data[current_class].find(identifier) != member_function_data[current_class].end()) {
+		return scope_class;
+	}
+	else if (exist_in_symbol_table(global_function_symbol, identifier)) {
+		return scope_global;
+	}
+	else if (exist_in_symbol_table(builtin_function_symbol, identifier)) {
+		return scope_local;
 	}
 
-	return nullptr;
+	std::cout << "Failed to find function named : " << identifier << " at this scope." << std::endl;
+	exit(EXIT_FAILURE);
+}
+
+std::string create_identifier_ir(IdentifierAST* identifier_ast) {
+	std::string result = "";
+
+	scopes scope = get_scope_of_identifier(identifier_ast->identifier);
+
+	if (scope == scope_local) {
+		result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
+			+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+	}
+	else if (scope == scope_class) {
+		result = "@LOAD_CLASS " + identifier_ast->identifier + " " + std::to_string(identifier_ast->line_number);
+	}
+	else if (scope == scope_global) {
+		result = "@LOAD_GLOBAL " + identifier_ast->identifier + " " + std::to_string(identifier_ast->line_number);
+	}
+
+	result += create_attr_ir(identifier_ast, "lhs");
+
+	return result;
+}
+
+Data get_data_of_variable(std::string const& identifier) {
+	scopes scope = get_scope_of_identifier(identifier);
+
+	if (scope == scope_local) {
+		std::vector<std::unordered_map<std::string, Data>>* area = local_variable_symbols.top();
+		for (int i = 0; i < area->size(); i++) {
+			if (area->at(i).find(identifier) != area->at(i).end()) {
+				std::unordered_map<std::string, Data>::iterator area_iterator;
+				std::unordered_map<std::string, Data> found_area = area->at(i);
+
+				for (area_iterator = found_area.begin(); area_iterator != found_area.end(); area_iterator++) {
+					return area_iterator->second;
+				}
+			}
+		}
+	}
+	else if (scope == scope_class) {
+		Data result;
+		result.id = member_variable_data[current_class][identifier].id;
+		result.type = member_variable_data[current_class][identifier].type;
+		return result;
+	}
+	else if (scope == scope_global) {
+		return global_variable_symbol[identifier];
+	}
+}
+
+std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs_rhs) {
+	IdentifierAST* searcher = identifier_ast;
+	BaseAST* attr_target = identifier_ast;
+	std::string result;
+
+	while (true) {
+		if (searcher->attr == nullptr) break;
+
+		if (searcher->attr->type == bin_expr_ast) {
+			if (lhs_rhs == "lhs")
+				searcher = (IdentifierAST*)((BinExprAST*)searcher->attr)->lhs;
+			else
+				searcher = (IdentifierAST*)((BinExprAST*)searcher->attr)->rhs;
+		}
+		else {
+			searcher = (IdentifierAST*)searcher->attr;
+		}
+
+		// case for if the target attr is identifier.
+		if (attr_target->type == ast_type::identifier_ast) {
+			std::string type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier).type;
+
+			MemberVariableData member_variable;
+
+			if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
+				member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
+				member_variable.name = searcher->identifier;
+			}
+			else {
+				ClassAST* class_ast_searcher = parsed_class_data[type];
+
+				while (true) {
+					if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
+						member_variable.id
+							= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
+						member_variable.name = searcher->identifier;
+					}
+
+					if (class_ast_searcher->parent_type == "") break;
+					class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+
+				}
+			}
+
+			result += "@LOAD_ATTR " + std::to_string(member_variable.id)
+				+ " (" + member_variable.name + ") " + std::to_string(identifier_ast->line_number) + "\n";
+		}
+
+		// add case for target attr is function ( consider return type for find variable maybe. )
+
+		attr_target = searcher;
+	}
+
+	return result;
+}
+
+std::string create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
+	return "";
 }
 
 unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
@@ -110,7 +216,7 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 	return result;
 }
 
-unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area) {
+unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area) {
 	int result = 0;
 	for (int i = 0; i < area->size(); i++) {
 		result += area->at(i).size();
@@ -118,244 +224,34 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 	return result;
 }
 
-std::pair<scopes, Data*> get_memory_from_scope(std::string const& identifier) {
+unsigned int get_parent_member_variable_size(std::string const& class_name) {
+	ClassAST* class_ast_searcher = parsed_class_data[class_name];
+	unsigned int parent_id_size = 0;
 
-	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+	while (true) {
+		if (class_ast_searcher->parent_type == "") break;
 
-	Data* data = get_local_variable(local_variable_symbol, identifier);
+		class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 
-	scopes result = scopes::scope_local;
-	unsigned int id = get_local_variable_id(local_variable_symbol, identifier);
-
-	if (data == nullptr) {
-		if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
-			std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
-
-			id = _class->find(identifier)->second;
-
-			data = new Data;
-			data->type = get_member_variable(current_class, identifier).first;
-			data->id = id;
-
-			result = scopes::scope_class;
-		}
-		else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
-			data = &global_variable_symbol[identifier];
-			id = data->id;
-			result = scopes::scope_global;
-		}
+		parent_id_size += class_ast_searcher->variables.size();
 	}
 
-	return std::make_pair(result, data);
+	return parent_id_size;
 }
 
-Data* create_identifier_ast(BaseAST* identifier_ast, std::string const& identifier, std::string& result, int line_number, int indentation) {
+unsigned int get_parent_member_function_size(std::string const& class_name) {
+	ClassAST* class_ast_searcher = parsed_class_data[class_name];
+	unsigned int parent_id_size = 0;
 
-	std::string load_type = "";
-	unsigned int id = 0;
+	while (true) {
+		if (class_ast_searcher->parent_type == "") break;
 
-	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+		class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 
-	Data* data = nullptr;
-	if (identifier == "this") {
-		data = new Data;
-		data->id = current_class_id;
-		data->type = current_class;
-
-		std::string line = "@PUSH_THIS " + std::to_string(line_number);
-
-		append_data(result, line, indentation);
-	}
-	else {
-		data = get_local_variable(local_variable_symbol, identifier);
-
-		load_type = "@LOAD_LOCAL";
-		id = get_local_variable_id(local_variable_symbol, identifier);
-
-		if (data == nullptr) {
-			if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
-				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
-
-				id = _class->find(identifier)->second;
-
-				data = new Data;
-				data->type = get_member_variable(current_class, identifier).first;
-				data->id = id;
-
-				load_type = "@LOAD_CLASS";
-			}
-			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
-				data = &global_variable_symbol[identifier];
-				id = data->id;
-				load_type = "@LOAD_GLOBAL";
-			}
-		}
-
-		std::string line = load_type + " " + std::to_string(id)
-			+ " (" + identifier + ") " + std::to_string(line_number);
-
-		append_data(result, line, indentation);
+		parent_id_size += class_ast_searcher->functions.size();
 	}
 
-	BaseAST* searcher = identifier_ast;
-
-	while (searcher->attr != nullptr) {
-		if (searcher->attr->type == ast_type::bin_expr_ast)
-			searcher->attr = ((BinExprAST*)searcher->attr)->lhs;
-
-		if (searcher->attr->type == ast_type::identifier_ast) {
-			IdentifierAST* ident_ast = (IdentifierAST*)searcher->attr;
-			unsigned int id = 0;
-			std::string _attr;
-
-			if (class_member_variables->find(data->type) != class_member_variables->end()) { // case for attr of class memory
-				std::unordered_map<std::string, unsigned int> _class = class_member_variables->find(data->type)->second;
-				id = _class.find(ident_ast->identifier)->second;
-
-				_attr = "@LOAD_ATTR " + std::to_string(id)
-					+ " (" + ident_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
-			}
-			else { // case for @1 ( vector data )
-				std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
-				Data* data = get_local_variable(local_variable_symbol, identifier);
-
-				if (ident_ast->identifier == "x") id = 0;
-				if (ident_ast->identifier == "y") id = 1;
-				if (ident_ast->identifier == "z") id = 2;
-
-				if (data != nullptr) {
-					if (data->type == "vector") {
-						_attr = "@LOAD_ATTR " + std::to_string(id)
-							+ " (" + ident_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
-
-					}
-				}
-			}
-			append_data(result, _attr, indentation);
-		}
-		else if (searcher->attr->type == function_call_ast) {
-			FunctionCallAST* func_call = (FunctionCallAST*)searcher->attr;
-			IdentifierAST* ident_ast = (IdentifierAST*)searcher->attr;
-
-			std::string current_identifier = ident_ast->identifier;
-			if (ident_ast->identifier == "this")
-				current_identifier = current_class;
-
-			data = get_memory_from_scope(current_identifier).second;
-			std::unordered_map<std::string, std::unordered_map<std::string, unsigned int>> _class_member_functions = *class_member_functions;
-			std::unordered_map<std::string, unsigned int> _class = class_member_functions->find(data->type)->second;
-			unsigned int id = _class.find(func_call->function_name)->second;
-
-			for (int i = func_call->parameters.size() - 1; i >= 0; i--) {
-				std::string param = create_ir(func_call->parameters[i], 0);
-				append_data(result, param, indentation);
-			}
-
-			std::string _attr = "@CALL_ATTR " + std::to_string(id)
-				+ " (" + func_call->function_name + ") " + std::to_string(func_call->parameters.size())
-				+ " " + std::to_string(identifier_ast->line_number);
-
-
-			append_data(result, _attr, indentation);
-		}
-		searcher = searcher->attr;
-	}
-
-	return data;
-}
-
-std::string get_store_type(unsigned int& id, BaseAST* last_ast) {
-	std::string store_type = "";
-	std::string identifier = ((IdentifierAST*)last_ast)->identifier;
-	if (last_ast->type == identifier_ast) {
-		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
-
-		Data* data = get_local_variable(local_variable_symbol, identifier);
-
-		store_type = "@STORE_LOCAL";
-		id = get_local_variable_id(local_variable_symbol, identifier);
-
-		if (data == nullptr) {
-			if (exist_in_symbol_table(class_member_variables->find(current_class)->second, identifier)) {
-				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
-				id = _class->find(identifier)->second;
-				store_type = "@STORE_CLASS";
-			}
-			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
-				data = &global_variable_symbol[identifier];
-				id = data->id;
-				store_type = "@STORE_GLOBAL";
-			}
-		}
-	}
-
-	return store_type;
-}
-
-void create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
-	BinExprAST* bin_expr_ast = ((BinExprAST*)ast);
-
-	if (bin_expr_ast->rhs != nullptr) { // if there's no rhs, then it means that rhs already created.
-		std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
-		append_data(result, rhs, indentation);
-	}
-
-	BaseAST* searcher = ((BinExprAST*)ast)->lhs;
-	BaseAST* last_ast = ((BinExprAST*)ast)->lhs;
-	BaseAST* attr_target_ast = ((BinExprAST*)ast)->lhs;
-
-	while (searcher->attr != nullptr) {
-		if (searcher->attr->attr == nullptr) {
-			if (searcher->attr->type == ast_type::bin_expr_ast)
-				last_ast = ((BinExprAST*)searcher->attr)->lhs;
-			else
-				last_ast = searcher->attr;
-			searcher->attr = nullptr;
-			break;
-		}
-
-		searcher = ((BinExprAST*)searcher->attr)->lhs;
-		attr_target_ast = searcher;
-	}
-
-	if (((BinExprAST*)ast)->lhs == last_ast) { // single node.
-		std::string identifier = ((IdentifierAST*)searcher)->identifier;
-		std::pair<scopes, Data*> scope_result = get_memory_from_scope(identifier);
-		std::string store_type = get_store_type(scope_result.second->id, searcher);
-
-		std::string line = store_type + " " + std::to_string(scope_result.second->id)
-			+ " (" + identifier + ") " + std::to_string(ast->line_number);
-
-		append_data(result, line, indentation);
-	}
-
-	if (((BinExprAST*)ast)->lhs != last_ast) { // attr, multiple nodes
-		Data* data = create_identifier_ast(((BinExprAST*)ast)->lhs, ((IdentifierAST*)((BinExprAST*)ast)->lhs)->identifier, result, ast->line_number, indentation);
-
-		if (data->type == "vector") { // vector attr
-			std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
-			unsigned int id = 0;
-
-			if (attr_identifier == "x") id = 0;
-			if (attr_identifier == "y") id = 1;
-			if (attr_identifier == "z") id = 2;
-
-			std::string line = "@STORE_ATTR " + std::to_string(id)
-				+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
-			append_data(result, line, indentation);
-		}
-		else {
-			std::unordered_map<std::string, unsigned int> member_variables = class_member_variables->find(data->type)->second;
-			std::string attr_identifier = ((IdentifierAST*)last_ast)->identifier;
-
-			unsigned int id = member_variables.find(attr_identifier)->second;
-
-			std::string line = "@STORE_ATTR " + std::to_string(id)
-				+ " (" + attr_identifier + ") " + std::to_string(ast->line_number);
-
-			append_data(result, line, indentation);
-		}
-	}
+	return parent_id_size;
 }
 
 const std::string create_ir(BaseAST* ast, int indentation) {
@@ -399,7 +295,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case array_refer_ast: {
 		ArrayReferAST* array_refer_ast = (ArrayReferAST*)ast;
 
-		create_identifier_ast(array_refer_ast, array_refer_ast->identifier, result, array_refer_ast->line_number, indentation);
+		append_data(result, create_identifier_ir(array_refer_ast), indentation);
 
 		for (int i = 0; i < array_refer_ast->indexes.size(); i++) {
 			append_data(result, create_ir(array_refer_ast->indexes[i], indentation), indentation);
@@ -417,7 +313,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, param, indentation);
 		}
 
-		unsigned int id = class_symbol[new_ast->class_name];
+		unsigned int id = class_id[new_ast->class_name];
 
 		std::string parameter_count = std::to_string(new_ast->parameters.size());
 
@@ -435,43 +331,14 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		current_scope = scope_class;
 		current_class = class_ast->name;
 
-		std::unordered_map<std::string, unsigned int> temp1 = {};
-		std::unordered_map<std::string, std::string> temp2 = {};
-
-		class_member_functions->insert(std::make_pair(current_class, temp1));
-		class_member_variables->insert(std::make_pair(current_class, temp1));
-
-		unsigned int id = class_symbol.size();
-		class_symbol.insert(std::make_pair(class_ast->name, id));
-
-		if (ast->type == object_ast) {
-			std::string name = class_ast->name;
-			std::unordered_map<std::string, unsigned int>* member_variables = &class_member_variables->find(name)->second;
-			std::unordered_map<std::string, unsigned int>* member_functions = &class_member_functions->find(name)->second;
-
-			member_variables->insert(std::make_pair("position", 0));
-			member_variables->insert(std::make_pair("width", 1));
-			member_variables->insert(std::make_pair("height", 2));
-			member_variables->insert(std::make_pair("rotation", 3));
-			member_variables->insert(std::make_pair("sprite", 4));
-
-			member_functions->insert(std::make_pair("render", 0));
-		}
-
 		std::string parent_type;
 		if (class_ast->parent_type == "")
 			parent_type = "-1";
 		else {
-			parent_type = std::to_string(class_symbol[class_ast->parent_type]);
+			parent_type = std::to_string(class_id[class_ast->parent_type]);
 		}
 
-		if (parent_type == "-1")
-			parent_symbol.insert(std::make_pair(class_ast->name, "-1"));
-		else
-			parent_symbol.insert(std::make_pair(class_ast->name, class_ast->parent_type));
-
 		current_class = class_ast->name;
-		current_class_id = id;
 
 		std::string object_type;
 
@@ -483,6 +350,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			object_type = "OBJECT";
 
 		create_scope();
+		unsigned int id = class_id[class_ast->name];
 		std::string line = object_type + " " + std::to_string(id) + " (" + class_ast->name + ") " + parent_type + " {";
 		append_data(result, line, indentation);
 
@@ -564,28 +432,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				global_function_symbol.size()));
 			break;
 		case scope_class:
-			std::unordered_map<std::string, unsigned int>* _class = &class_member_functions->find(current_class)->second;
-
-			std::string searcher = current_class;
-
-			while (parent_symbol[searcher] != "-1") {
-				searcher = parent_symbol[searcher];
-
-				std::vector<BaseAST*> super_member_functions = parsed_class_data[searcher]->functions;
-
-				for (int i = 0; i < super_member_functions.size(); i++) {
-					FunctionDeclarationAST* _func = ((FunctionDeclarationAST*)super_member_functions[i]);
-
-					if (_class->find(_func->function_name) == _class->end()) {
-						_class->insert(std::make_pair(_func->function_name, i + (unsigned int)_class->size()));
-					}
-				}
-
-			}
-
-			// check if there's function with the same name.
-			id += (unsigned int)_class->size();
-			_class->insert(std::make_pair(function_name, id));
 
 			break;
 		}
@@ -655,9 +501,8 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 	case identifier_ast: {
 		IdentifierAST* _identifier_ast = ((IdentifierAST*)ast);
-		std::string identifier = _identifier_ast->identifier;
 
-		Data* data = create_identifier_ast(_identifier_ast, identifier, result, _identifier_ast->line_number, indentation);
+		append_data(result, create_identifier_ir(_identifier_ast), indentation);
 		break;
 	};
 
@@ -821,7 +666,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 				store_type = "@STORE_LOCAL";
-				id = get_local_variable_id(local_variable_symbol);
+				id = generate_local_variable_id(local_variable_symbol);
 
 				local_variable_symbol->at(local_variable_symbol->size() - 1).insert(std::make_pair(variable_declaration_ast->names[i],
 					Data{ id, variable_declaration_ast->var_types[i] }));
@@ -831,33 +676,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			case scope_class:
 				store_type = "@STORE_CLASS";
 
-				std::unordered_map<std::string, unsigned int>* _class = &class_member_variables->find(current_class)->second;
-
-				std::string searcher = current_class;
-
-				while (parent_symbol[searcher] != "-1") {
-					searcher = parent_symbol[searcher];
-
-					std::vector<BaseAST*> super_member_variables = parsed_class_data[searcher]->variables;
-
-					for (int i = 0; i < super_member_variables.size(); i++) {
-						VariableDeclarationAST* _var = ((VariableDeclarationAST*)super_member_variables[i]);
-
-						for (int j = 0; j < _var->names.size(); j++) {
-							if (_class->find(_var->names[j]) != _class->end()) {
-								_class->find(_var->names[j])->second = i + j + (unsigned int)_class->size();
-							}
-							else {
-								_class->insert(std::make_pair(_var->names[j], i + j + (unsigned int)_class->size()));
-							}
-						}
-					}
-
-				}
-
-				id = (unsigned int)_class->size();
-
-				_class->insert(std::make_pair(variable_declaration_ast->names[i], id));
+				id = get_parent_member_variable_size(current_class) + member_variable_data[current_class][variable_declaration_ast->names[i]].id;
 
 				break;
 			}
@@ -995,6 +814,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	}
 
 	case function_call_ast: {
+
 		FunctionCallAST* function_call_ast = ((FunctionCallAST*)ast);
 		std::string function_name = function_call_ast->function_name;
 
@@ -1015,9 +835,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		unsigned int function_id = -1;
 		std::string call_type = "";
 
-		if (class_member_functions->find(current_class) != class_member_functions->end() && exist_in_symbol_table(class_member_functions->find(current_class)->second, function_name)) {
-			std::unordered_map<std::string, unsigned int>* _class = &class_member_functions->find(current_class)->second;
-			function_id = _class->find(function_name)->second;
+		scopes scope = get_scope_of_function(function_name);
+
+		if (scope == scope_class) {
+			function_id = member_function_data[current_class][function_name].id;
 
 			call_type = "@CALL_CLASS";
 		}
