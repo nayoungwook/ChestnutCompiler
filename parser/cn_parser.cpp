@@ -1,5 +1,11 @@
 #include "cn_parser.h"
 
+extern std::unordered_map<std::string, ClassAST*> parsed_class_data;
+extern std::unordered_map<std::string, FunctionDeclarationAST*> parsed_function_data;
+extern std::unordered_map<std::string, unsigned int> class_id;
+extern std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
+extern std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
+
 std::vector<Token*> get_parameter_tokens(std::vector<Token*>& tokens) {
 
 	std::vector<Token*> parameter_tokens;
@@ -565,13 +571,10 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	ast = new FunctionDeclarationAST(name, parameters, return_type);
 	ast->body = body;
 
+	parsed_function_data.insert(std::make_pair(name, ast));
+
 	return ast;
 }
-
-extern std::unordered_map<std::string, ClassAST*> parsed_class_data;
-extern std::unordered_map<std::string, unsigned int> class_id;
-extern std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
-extern std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
 
 void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::string, MemberVariableData>& member_variables) {
 	for (int i = 0; i < class_ast->variables.size(); i++) {

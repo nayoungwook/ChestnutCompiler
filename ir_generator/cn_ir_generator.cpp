@@ -1,6 +1,7 @@
 #include "cn_ir_generator.h"
 
 std::unordered_map<std::string, ClassAST*> parsed_class_data;
+std::unordered_map<std::string, FunctionDeclarationAST*> parsed_function_data;
 std::unordered_map<std::string, unsigned int> class_id;
 std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
 std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
@@ -49,7 +50,7 @@ const std::string integer_to_hex(int i) {
 
 scopes get_scope_of_identifier(std::string const& identifier) {
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
-	unsigned int id = get_local_variable_id(local_variable_symbol, identifier);
+	int id = get_local_variable_id(local_variable_symbol, identifier);
 
 	if (identifier == "this") {
 		return scope_local;
@@ -59,7 +60,17 @@ scopes get_scope_of_identifier(std::string const& identifier) {
 			if (member_variable_data[current_class].find(identifier) != member_variable_data[current_class].end()) {
 				return scope_class;
 			}
-			else if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
+			else {
+				std::string searcher = current_class;
+				while (parsed_class_data[searcher]->parent_type != "") {
+					searcher = parsed_class_data[searcher]->parent_type;
+
+					if (member_variable_data[searcher].find(identifier) != member_variable_data[searcher].end()) {
+						return scope_class;
+					}
+				}
+			}
+			if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
 				return scope_global;
 			}
 		}
@@ -78,7 +89,18 @@ scopes get_scope_of_function(std::string const& identifier) {
 	if (member_function_data[current_class].find(identifier) != member_function_data[current_class].end()) {
 		return scope_class;
 	}
-	else if (exist_in_symbol_table(global_function_symbol, identifier)) {
+	else {
+		std::string searcher = current_class;
+		while (parsed_class_data[searcher]->parent_type != "") {
+			searcher = parsed_class_data[searcher]->parent_type;
+
+			if (member_function_data[searcher].find(identifier) != member_function_data[searcher].end()) {
+				return scope_class;
+			}
+		}
+	}
+
+	if (exist_in_symbol_table(global_function_symbol, identifier)) {
 		return scope_global;
 	}
 	else if (exist_in_symbol_table(builtin_function_symbol, identifier)) {
@@ -92,17 +114,34 @@ scopes get_scope_of_function(std::string const& identifier) {
 std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 	std::string result = "";
 
-	scopes scope = get_scope_of_identifier(identifier_ast->identifier);
+	if (identifier_ast->identifier == "this") {
+		result = "@PUSH_THIS " + std::to_string(identifier_ast->line_number) + "\n";
+	}
+	else {
+		scopes scope = get_scope_of_identifier(identifier_ast->identifier);
 
-	if (scope == scope_local) {
-		result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
-			+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
-	}
-	else if (scope == scope_class) {
-		result = "@LOAD_CLASS " + identifier_ast->identifier + " " + std::to_string(identifier_ast->line_number);
-	}
-	else if (scope == scope_global) {
-		result = "@LOAD_GLOBAL " + identifier_ast->identifier + " " + std::to_string(identifier_ast->line_number);
+		if (scope == scope_local) {
+			result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+		}
+		else if (scope == scope_class) {
+
+			std::string searcher = current_class;
+			while (parsed_class_data[searcher]->parent_type != "") {
+				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
+					break;
+				}
+
+				searcher = parsed_class_data[searcher]->parent_type;
+			}
+
+			result = "@LOAD_CLASS " + std::to_string(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+		}
+		else if (scope == scope_global) {
+			result = "@LOAD_GLOBAL " + std::to_string(global_variable_symbol[identifier_ast->identifier].id)
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+		}
 	}
 
 	result += create_attr_ir(identifier_ast, "lhs");
@@ -137,8 +176,85 @@ Data get_data_of_variable(std::string const& identifier) {
 	}
 }
 
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type) {
+	MemberVariableData member_variable;
+
+	if (parsed_class_data[type] == nullptr) {
+		std::cout << "We don\'t have \"" << type << "\" as a class.";
+		exit(EXIT_FAILURE);
+	}
+
+	if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
+		member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
+		member_variable.name = searcher->identifier;
+	}
+	else {
+		ClassAST* class_ast_searcher = parsed_class_data[type];
+
+		while (true) {
+			if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
+				member_variable.id
+					= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
+				member_variable.name = searcher->identifier;
+			}
+
+			if (class_ast_searcher->parent_type == "") break;
+			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+
+		}
+	}
+
+	return member_variable;
+}
+
+MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type) {
+	MemberFunctionData member_function;
+
+	if (parsed_class_data[type] == nullptr) {
+		std::cout << "We don\'t have \"" << type << "\" as a class.";
+		exit(EXIT_FAILURE);
+	}
+
+	if (member_function_data[type].find(searcher->function_name) != member_function_data[type].end()) {
+		member_function.id = member_function_data[type][searcher->function_name].id + get_parent_member_function_size(type);
+		member_function.name = searcher->function_name;
+	}
+	else {
+		ClassAST* class_ast_searcher = parsed_class_data[type];
+
+		while (true) {
+			if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
+				member_function.id
+					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
+				member_function.name = searcher->function_name;
+			}
+
+			if (class_ast_searcher->parent_type == "") break;
+			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+		}
+	}
+
+	return member_function;
+}
+
+std::string get_type_of_attr_target(BaseAST* attr_target) {
+	std::string type = "";
+
+	// search for target.
+	if (attr_target->type == ast_type::identifier_ast) {
+		if (((IdentifierAST*)attr_target)->identifier == "this")
+			type = current_class;
+		else
+			type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier).type;
+	}
+	else if (attr_target->type == ast_type::function_call_ast) {
+		type = parsed_function_data[((FunctionCallAST*)attr_target)->function_name]->return_type;
+	}
+	return type;
+}
+
 std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs_rhs) {
-	IdentifierAST* searcher = identifier_ast;
+	BaseAST* searcher = identifier_ast;
 	BaseAST* attr_target = identifier_ast;
 	std::string result;
 
@@ -147,45 +263,46 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 
 		if (searcher->attr->type == bin_expr_ast) {
 			if (lhs_rhs == "lhs")
-				searcher = (IdentifierAST*)((BinExprAST*)searcher->attr)->lhs;
+				searcher = ((BinExprAST*)searcher->attr)->lhs;
 			else
-				searcher = (IdentifierAST*)((BinExprAST*)searcher->attr)->rhs;
+				searcher = ((BinExprAST*)searcher->attr)->rhs;
 		}
 		else {
-			searcher = (IdentifierAST*)searcher->attr;
+			searcher = searcher->attr;
 		}
 
-		// case for if the target attr is identifier.
-		if (attr_target->type == ast_type::identifier_ast) {
-			std::string type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier).type;
+		std::string type = get_type_of_attr_target(attr_target);
 
-			MemberVariableData member_variable;
+		//append attribute data.
+		if (searcher->type == ast_type::identifier_ast) {
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type);
 
-			if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
-				member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
-				member_variable.name = searcher->identifier;
-			}
-			else {
-				ClassAST* class_ast_searcher = parsed_class_data[type];
-
-				while (true) {
-					if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
-						member_variable.id
-							= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
-						member_variable.name = searcher->identifier;
-					}
-
-					if (class_ast_searcher->parent_type == "") break;
-					class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
-
-				}
-			}
-
-			result += "@LOAD_ATTR " + std::to_string(member_variable.id)
-				+ " (" + member_variable.name + ") " + std::to_string(identifier_ast->line_number) + "\n";
+			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
+				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
 		}
+		else if (searcher->type == ast_type::function_call_ast) {
+			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, type);
 
-		// add case for target attr is function ( consider return type for find variable maybe. )
+			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
+				std::string param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
+				append_data(result, param, 0);
+			}
+
+			result += "@CALL_ATTR " + std::to_string(member_function.id)
+				+ " (" + member_function.name + ") "
+				+ std::to_string(((FunctionCallAST*)searcher)->parameters.size()) + " " + std::to_string(searcher->line_number) + "\n";
+		}
+		else if (searcher->type == ast_type::array_refer_ast) {
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type);
+
+			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
+				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
+
+			for (int i = 0; i < ((ArrayReferAST*)searcher)->indexes.size(); i++) {
+				append_data(result, create_ir(((ArrayReferAST*)searcher)->indexes[i], 0), 0);
+				append_data(result, "@ARRAY_GET " + std::to_string(searcher->line_number), 0);
+			}
+		}
 
 		attr_target = searcher;
 	}
@@ -193,11 +310,111 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 	return result;
 }
 
-std::string create_assign_ir(BaseAST* ast, std::string& result, int indentation) {
-	return "";
+BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
+	BaseAST* searcher = ast;
+	BaseAST* attr_target = ast;
+
+	while (true) {
+		if (ast->attr->type == bin_expr_ast) {
+			if (lhs_rhs == "lhs")
+				searcher = ((BinExprAST*)searcher->attr)->lhs;
+			else
+				searcher = ((BinExprAST*)searcher->attr)->rhs;
+		}
+		else {
+			searcher = searcher->attr;
+		}
+
+		if (searcher->attr == nullptr) {
+			attr_target->attr = nullptr;
+			return searcher;
+		}
+
+		attr_target = searcher;
+	}
+	return nullptr;
 }
 
-unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
+BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
+	BaseAST* searcher = ast;
+	BaseAST* attr_target = ast;
+
+	if (ast->attr == nullptr) return ast;
+
+	while (true) {
+		if (ast->attr->type == bin_expr_ast) {
+			if (lhs_rhs == "lhs")
+				searcher = ((BinExprAST*)searcher->attr)->lhs;
+			else
+				searcher = ((BinExprAST*)searcher->attr)->rhs;
+		}
+		else {
+			searcher = searcher->attr;
+		}
+
+		if (searcher->attr == nullptr) {
+			return searcher;
+		}
+
+		attr_target = searcher;
+	}
+	return nullptr;
+}
+std::string create_assign_ir(BaseAST* ast, int indentation) {
+	BinExprAST* bin_ast = ((BinExprAST*)ast);
+
+	BaseAST* last_ast = extract_last_ast(bin_ast->lhs, "lhs");
+
+	std::string result = "";
+
+	if (bin_ast->rhs != nullptr) // if rhs is not already declared.
+		result += create_ir(bin_ast->rhs, indentation);
+
+	if (last_ast == nullptr) { // single node.
+		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
+
+		scopes scope = get_scope_of_identifier(identifier_ast->identifier);
+
+		if (scope == scope_local) {
+			result += "@STORE_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+		}
+		else if (scope == scope_class) {
+
+			std::string searcher = current_class;
+			while (parsed_class_data[searcher]->parent_type != "") {
+				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
+					break;
+				}
+
+				searcher = parsed_class_data[searcher]->parent_type;
+			}
+
+			result += "@STORE_CLASS " + std::to_string(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+		}
+		else if (scope == scope_global) {
+			result += "@STORE_GLOBAL " + std::to_string(global_variable_symbol[identifier_ast->identifier].id)
+				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+		}
+	}
+	else { // for attr.
+		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
+		result += create_identifier_ir(identifier_ast);
+
+		BaseAST* attr_target = get_last_ast(identifier_ast, "lhs");
+		std::string type = get_type_of_attr_target(attr_target);
+
+		MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)last_ast, type);
+
+		result += "@STORE_ATTR " + std::to_string(member_variable.id)
+			+ " (" + member_variable.name + ") " + std::to_string(attr_target->line_number) + "\n";
+	}
+
+	return result;
+}
+
+int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
 	int result = 0;
 	for (int i = 0; i < area->size(); i++) {
 		if (area->at(i).find(obj_identifier) != area->at(i).end()) {
@@ -213,7 +430,7 @@ unsigned int get_local_variable_id(std::vector<std::unordered_map<std::string, D
 		}
 		result += area->at(i).size();
 	}
-	return result;
+	return -1;
 }
 
 unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area) {
@@ -432,6 +649,8 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				global_function_symbol.size()));
 			break;
 		case scope_class:
+
+			id = get_parent_member_function_size(current_class) + member_function_data[current_class][function_name].id;
 
 			break;
 		}
@@ -694,7 +913,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		BinExprAST* bin_expr_ast = ((BinExprAST*)ast);
 
 		if (bin_expr_ast->oper == "=") {
-			create_assign_ir(ast, result, indentation);
+			append_data(result, create_assign_ir(ast, indentation), 0);
 		}
 		else if (bin_expr_ast->oper == "++" || bin_expr_ast->oper == "--") {
 			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
@@ -781,7 +1000,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, oper, indentation);
 
 			bin_expr_ast->rhs = nullptr;
-			create_assign_ir(bin_expr_ast, result, indentation);
+			append_data(result, create_assign_ir(bin_expr_ast, indentation), indentation);
 		}
 		else {
 			std::string oper = "";
