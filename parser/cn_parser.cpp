@@ -89,7 +89,7 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 
 		if (_cur_node->type == number_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
 			|| _cur_node->type == new_ast || _cur_node->type == character_ast || _cur_node->type == bool_ast || _cur_node->type == keyboard_ast
-			|| _cur_node->type == string_literal_ast) {
+			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast) {
 			result.push_back(_cur_node);
 			continue;
 		}
@@ -595,6 +595,28 @@ void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::st
 	}
 }
 
+void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_asts) {
+	std::unordered_map<std::string, MemberFunctionData> member_functions;
+	for (int i = 0; i < function_asts.size(); i++) {
+		FunctionDeclarationAST* ast = (FunctionDeclarationAST*)function_asts[i];
+
+		MemberFunctionData data;
+		std::string name = ast->function_name;
+
+		data.access_modifier = ast->access_modifier;
+		data.name = name;
+		data.id = i;
+
+		member_functions.insert(std::make_pair(name, data));
+	}
+
+	member_function_data.insert(std::make_pair(class_ast->name, member_functions));
+
+	std::unordered_map<std::string, MemberVariableData> member_variables;
+	assign_member_variable_data(class_ast, member_variables);
+	member_variable_data.insert(std::make_pair(class_ast->name, member_variables));
+}
+
 ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 
@@ -630,27 +652,7 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 	ast->functions = function_asts;
 	ast->variables = variable_asts;
 
-	parsed_class_data.insert(std::make_pair(name, ast));
-	class_id.insert(std::make_pair(name, class_id.size()));
-
-	std::unordered_map<std::string, MemberFunctionData> member_functions;
-	for (int i = 0; i < function_asts.size(); i++) {
-		FunctionDeclarationAST* ast = (FunctionDeclarationAST*)function_asts[i];
-
-		MemberFunctionData data;
-		std::string name = ast->function_name;
-
-		data.access_modifier = ast->access_modifier;
-		data.name = name;
-		data.id = i;
-
-		member_functions.insert(std::make_pair(name, data));
-	}
-	member_function_data.insert(std::make_pair(name, member_functions));
-
-	std::unordered_map<std::string, MemberVariableData> member_variables;
-	assign_member_variable_data(ast, member_variables);
-	member_variable_data.insert(std::make_pair(name, member_variables));
+	appply_member_data(ast, function_asts);
 
 	std::vector<Token*>().swap(body_tokens);
 
@@ -727,7 +729,7 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 			std::vector<VariableDeclarationAST*> parameters;
 			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
 			function_declaration_ast->access_modifier = "public";
-			ast->functions.push_back(function_declaration_ast);
+			function_asts.push_back(function_declaration_ast);
 		}
 	}
 
@@ -736,13 +738,14 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	parsed_class_data.insert(std::make_pair(name, ast));
 	class_id.insert(std::make_pair(name, class_id.size()));
+	appply_member_data(ast, function_asts);
 
 	std::vector<Token*>().swap(body_tokens);
 
 	return ast;
 }
 
-SceneAST* create_scene_ast(std::vector<Token*>& tokens) {
+SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 
 	std::string name = pull_token_and_expect(tokens, -1)->identifier;
 
@@ -794,22 +797,23 @@ SceneAST* create_scene_ast(std::vector<Token*>& tokens) {
 		ast->constructor.push_back(new ConstructorDeclarationAST(parameters));
 	}
 
-	ast->functions = function_asts;
-	ast->variables = variable_asts;
-
 	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
 		if (!satisfied.second) {
 			std::vector<VariableDeclarationAST*> parameters;
 			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
 			function_declaration_ast->access_modifier = "public";
-			ast->functions.push_back(function_declaration_ast);
+			function_asts.push_back(function_declaration_ast);
 		}
 	}
+
+	ast->functions = function_asts;
+	ast->variables = variable_asts;
 
 	std::vector<Token*>().swap(body_tokens);
 
 	parsed_class_data.insert(std::make_pair(name, ast));
 	class_id.insert(std::make_pair(name, class_id.size()));
+	appply_member_data(ast, function_asts);
 
 	return ast;
 }
@@ -1254,7 +1258,7 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		if (first_token->type == tok_object)
 			result = create_object_declaration_ast(tokens);
 		if (first_token->type == tok_scene)
-			result = create_scene_ast(tokens);
+			result = create_scene_declaration_ast(tokens);
 	}
 	else if (first_token->type == tok_pubilc || first_token->type == tok_private || first_token->type == tok_protected) {
 		std::string access_modifier = first_token->identifier;
