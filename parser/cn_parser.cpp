@@ -683,7 +683,9 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST("100") , new NumberAST("100"), new NumberAST("0"), new IdentifierAST("null") };
 
-	VariableDeclarationAST* _position_decl = new VariableDeclarationAST(_type, _name, _decl, _decl.size());
+	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _decl.size());
+
+	variable_asts.push_back(_builtin_decl);
 
 	std::map<std::string, bool> functions_satisfied =
 	{

@@ -52,7 +52,7 @@ scopes get_scope_of_identifier(std::string const& identifier) {
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 	int id = get_local_variable_id(local_variable_symbol, identifier);
 
-	if (identifier == "this") {
+	if (identifier == "this" || identifier == "null") {
 		return scope_local;
 	}
 	else {
@@ -117,6 +117,9 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 	if (identifier_ast->identifier == "this") {
 		result = "@PUSH_THIS " + std::to_string(identifier_ast->line_number) + "\n";
 	}
+	else if (identifier_ast->identifier == "null") {
+		result = "@PUSH_NULL " + std::to_string(identifier_ast->line_number) + "\n";
+	}
 	else {
 		scopes scope = get_scope_of_identifier(identifier_ast->identifier);
 
@@ -179,28 +182,39 @@ Data get_data_of_variable(std::string const& identifier) {
 MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type) {
 	MemberVariableData member_variable;
 
-	if (parsed_class_data[type] == nullptr) {
+	if (parsed_class_data[type] == nullptr && type != "vector") {
 		std::cout << "We don\'t have \"" << type << "\" as a class.";
 		exit(EXIT_FAILURE);
 	}
 
-	if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
-		member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
+	if (type == "vector") {
+		if (searcher->identifier == "x")
+			member_variable.id = 0;
+		else if (searcher->identifier == "y")
+			member_variable.id = 1;
+		else if (searcher->identifier == "z")
+			member_variable.id = 2;
 		member_variable.name = searcher->identifier;
 	}
 	else {
-		ClassAST* class_ast_searcher = parsed_class_data[type];
+		if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
+			member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
+			member_variable.name = searcher->identifier;
+		}
+		else {
+			ClassAST* class_ast_searcher = parsed_class_data[type];
 
-		while (true) {
-			if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
-				member_variable.id
-					= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
-				member_variable.name = searcher->identifier;
+			while (true) {
+				if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
+					member_variable.id
+						= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
+					member_variable.name = searcher->identifier;
+				}
+
+				if (class_ast_searcher->parent_type == "") break;
+				class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+
 			}
-
-			if (class_ast_searcher->parent_type == "") break;
-			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
-
 		}
 	}
 
