@@ -24,6 +24,8 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("window", 1));
 	builtin_function_symbol.insert(std::make_pair("load_scene", 2));
 	builtin_function_symbol.insert(std::make_pair("image", 3));
+	builtin_function_symbol.insert(std::make_pair("push", 4));
+	builtin_function_symbol.insert(std::make_pair("len", 5));
 }
 
 void declare_builtin_variables() {
@@ -126,6 +128,7 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 		if (scope == scope_local) {
 			result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
 				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+
 		}
 		else if (scope == scope_class) {
 
@@ -145,7 +148,18 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 			result = "@LOAD_GLOBAL " + std::to_string(global_variable_symbol[identifier_ast->identifier].id)
 				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
 		}
+
+		result += "\n";
+
+		if (identifier_ast->type == array_refer_ast) {
+			for (int i = 0; i < ((ArrayReferAST*)identifier_ast)->indexes.size(); i++) {
+				append_data(result, create_ir(((ArrayReferAST*)identifier_ast)->indexes[i], 0), 0);
+				append_data(result, "@ARRAY_GET " + std::to_string(identifier_ast->line_number), 0);
+			}
+		}
 	}
+
+	result += "\n";
 
 	result += create_attr_ir(identifier_ast, "lhs");
 
@@ -183,7 +197,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 	MemberVariableData member_variable;
 
 	if (parsed_class_data[type] == nullptr && type != "vector") {
-		std::cout << "We don\'t have \"" << type << "\" as a class.";
+		std::cout << "We don\'t have \"" << type << "\" as a class. for read member var";
 		exit(EXIT_FAILURE);
 	}
 
@@ -194,6 +208,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 			member_variable.id = 1;
 		else if (searcher->identifier == "z")
 			member_variable.id = 2;
+
 		member_variable.name = searcher->identifier;
 	}
 	else {
@@ -264,6 +279,9 @@ std::string get_type_of_attr_target(BaseAST* attr_target) {
 	else if (attr_target->type == ast_type::function_call_ast) {
 		type = parsed_function_data[((FunctionCallAST*)attr_target)->function_name]->return_type;
 	}
+	else if (attr_target->type == ast_type::array_refer_ast) {
+		type = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier).type;
+	}
 	return type;
 }
 
@@ -301,10 +319,9 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 				std::string param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
 			}
-
-			result += "@CALL_ATTR " + std::to_string(member_function.id)
+			append_data(result, "@CALL_ATTR " + std::to_string(member_function.id)
 				+ " (" + member_function.name + ") "
-				+ std::to_string(((FunctionCallAST*)searcher)->parameters.size()) + " " + std::to_string(searcher->line_number) + "\n";
+				+ std::to_string(((FunctionCallAST*)searcher)->parameters.size()) + " " + std::to_string(searcher->line_number) + "\n", 0);
 		}
 		else if (searcher->type == ast_type::array_refer_ast) {
 			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type);
@@ -528,9 +545,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		append_data(result, create_identifier_ir(array_refer_ast), indentation);
 
-		for (int i = 0; i < array_refer_ast->indexes.size(); i++) {
-			append_data(result, create_ir(array_refer_ast->indexes[i], indentation), indentation);
-			append_data(result, "@ARRAY_GET " + std::to_string(ast->line_number), indentation);
+		if (array_refer_ast->attr == nullptr) {
+			for (int i = 0; i < array_refer_ast->indexes.size(); i++) {
+				append_data(result, create_ir(array_refer_ast->indexes[i], indentation), indentation);
+				append_data(result, "@ARRAY_GET " + std::to_string(ast->line_number), indentation);
+			}
 		}
 
 		break;
@@ -625,13 +644,20 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		current_scope = scope_local;
 
+		create_scope();
+
+		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+
 		for (int i = 0; i < constructor_declaration_ast->parameter.size(); i++) {
 			VariableDeclarationAST* param = constructor_declaration_ast->parameter[i];
 
 			line += param->names[0] + " " + param->var_types[0] + " ";
-		}
 
-		create_scope();
+			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
+				std::make_pair(constructor_declaration_ast->parameter[i]->names[i],
+					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameter[i]->var_types[i] }
+				));
+		}
 
 		line += "{";
 

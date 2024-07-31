@@ -130,13 +130,12 @@ private:
 public:
 	bool is_static = false;
 	std::string access_modifier = "default";
-	std::vector<std::string> var_types;
-	std::vector<std::string> names;
+	std::vector<std::string> var_types, names, array_var_types;
 	std::vector<BaseAST*> declarations;
 	size_t var_count;
 
 	VariableDeclarationAST(std::vector<std::string>& var_types, std::vector<std::string>& names,
-		std::vector<BaseAST*>& declarations, size_t var_count) : var_types(var_types), names(names), declarations(declarations), var_count(var_count) {
+		std::vector<BaseAST*>& declarations, std::vector<std::string>& array_var_types, size_t var_count) : var_types(var_types), names(names), declarations(declarations), var_count(var_count), array_var_types(array_var_types) {
 		type = variable_declaration_ast;
 	}
 };

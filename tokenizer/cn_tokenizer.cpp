@@ -66,6 +66,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			if (identifier == "bool") type = tok_bool;
 			if (identifier == "char") type = tok_char;
 			if (identifier == "string") type = tok_string;
+			if (identifier == "array") type = tok_array;
 
 			if (identifier == "cast") type = tok_cast;
 

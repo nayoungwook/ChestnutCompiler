@@ -313,12 +313,15 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 	Token* tok = nullptr;
 	std::vector<std::string> names;
 	std::vector<std::string> types;
+	std::vector<std::string> array_var_types;
 	std::vector<size_t> array_sizes;
 	std::vector<BaseAST*> declarations;
 
 	while (true) {
 		tok = pull_token_and_expect(tokens, tok_identifier);
 		names.push_back(tok->identifier);
+
+		std::string array_var_type = "";
 
 		tok = pull_token_and_expect(tokens, tok_colon);
 
@@ -330,6 +333,18 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 
 		std::string type = tok->identifier;
 		types.push_back(type);
+
+		if (tok->type == tok_array) {
+			pull_token_and_expect(tokens, tok_l_sq_bracket);
+
+			tok = pull_token_and_expect(tokens, -1);
+
+			array_var_type = tok->identifier;
+
+			pull_token_and_expect(tokens, tok_r_sq_bracket);
+		}
+
+		array_var_types.push_back(array_var_type);
 
 		tok = pull_token_and_expect(tokens, -1);
 
@@ -385,7 +400,7 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 		}
 	}
 
-	return new VariableDeclarationAST(types, names, declarations, names.size());
+	return new VariableDeclarationAST(types, names, declarations, array_var_types, names.size());
 }
 
 BinExprAST* create_assign_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
@@ -550,12 +565,22 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 		std::string _name = parameter_tokens[i][0]->identifier;
 
 		std::vector<std::string> types = { _type };
+		std::vector<std::string> _array_types;
 		std::vector<std::string> name = { _name };
+
+		if (_type == "array") {
+			if (parameter_tokens[i].size() > 2)
+				_array_types.push_back(parameter_tokens[i][4]->identifier);
+			else {
+				std::cout << "Error! array should have a type" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
 
 		std::vector<BaseAST*> _decl;
 		_decl.push_back(nullptr);
 
-		parameters.push_back(new VariableDeclarationAST(types, name, _decl, 1));
+		parameters.push_back(new VariableDeclarationAST(types, name, _decl, _array_types, 1));
 	}
 
 	pull_token_and_expect(tokens, tok_colon);
@@ -588,7 +613,11 @@ void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::st
 			data.name = name;
 			data.access_modifier = ast->access_modifier;
 			data.id = member_variables.size();
-			data.type = ast->var_types[j];
+
+			if (ast->var_types[j] != "array")
+				data.type = ast->var_types[j];
+			else
+				data.type = ast->array_var_types[j];
 
 			member_variables.insert(std::make_pair(name, data));
 		}
@@ -679,11 +708,12 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	std::vector<std::string> _type = { "vector", "number", "number", "number", "texture" };
 	std::vector<std::string> _name = { "position", "width", "height", "rotation", "sprite" };
+	std::vector<std::string> _var_types = { "", "", "", "", "" };
 	std::vector<BaseAST*> vector_decl = { new NumberAST("0"), new NumberAST("0") };
 
 	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST("100") , new NumberAST("100"), new NumberAST("0"), new IdentifierAST("null") };
 
-	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _decl.size());
+	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _var_types, _decl.size());
 
 	variable_asts.push_back(_builtin_decl);
 
@@ -1065,15 +1095,23 @@ ConstructorDeclarationAST* create_constructor_declaration_ast(std::vector<Token*
 		std::string _type = parameter_tokens[i][2]->identifier;
 		std::string _name = parameter_tokens[i][0]->identifier;
 
-		// TODO : check array type parameter
-
 		std::vector<std::string> types = { _type };
+		std::vector<std::string> _array_types;
 		std::vector<std::string> name = { _name };
+
+		if (_type == "array") {
+			if (parameter_tokens[i].size() > 2)
+				_array_types.push_back(parameter_tokens[i][4]->identifier);
+			else {
+				std::cout << "Error! array should have a type" << std::endl;
+				exit(EXIT_FAILURE);
+			}
+		}
 
 		std::vector<BaseAST*> _decl;
 		_decl.push_back(nullptr);
 
-		parameters.push_back(new VariableDeclarationAST(types, name, _decl, 1));
+		parameters.push_back(new VariableDeclarationAST(types, name, _decl, _array_types, 1));
 	}
 
 	std::vector<Token*> body_tokens = get_block_tokens(tokens);
@@ -1139,7 +1177,6 @@ VectorDeclarationAST* create_vector_declaration_ast(std::vector<Token*>& tokens)
 			element_asts[element_asts.size() - 1].push_back(parse(element_tokens[i]));
 		}
 	}
-
 
 	std::vector<BaseAST*> elements;
 
