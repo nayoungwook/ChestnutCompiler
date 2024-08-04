@@ -50,7 +50,7 @@ const std::string integer_to_hex(int i) {
 	return result;
 }
 
-scopes get_scope_of_identifier(std::string const& identifier) {
+scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifier_ast) {
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 	int id = get_local_variable_id(local_variable_symbol, identifier);
 
@@ -81,12 +81,20 @@ scopes get_scope_of_identifier(std::string const& identifier) {
 		}
 	}
 
-	std::cout << "Failed to find identifier : " << identifier << " at this scope." << std::endl;
-	exit(EXIT_FAILURE);
+	std::wstring w_identifier;
+	w_identifier.assign(identifier.begin(), identifier.end());
+	CHESTNUT_THROW_ERROR(L"Failed to find identifier : " + w_identifier, "FAILED_TO_FIND_IDENTIFIER", "004", identifier_ast->line_number);
 }
 
 scopes get_scope_of_function(std::string const& identifier) {
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+
+	if (exist_in_symbol_table(global_function_symbol, identifier)) {
+		return scope_global;
+	}
+	else if (exist_in_symbol_table(builtin_function_symbol, identifier)) {
+		return scope_local;
+	}
 
 	if (member_function_data[current_class].find(identifier) != member_function_data[current_class].end()) {
 		return scope_class;
@@ -100,13 +108,6 @@ scopes get_scope_of_function(std::string const& identifier) {
 				return scope_class;
 			}
 		}
-	}
-
-	if (exist_in_symbol_table(global_function_symbol, identifier)) {
-		return scope_global;
-	}
-	else if (exist_in_symbol_table(builtin_function_symbol, identifier)) {
-		return scope_local;
 	}
 
 	std::cout << "Failed to find function named : " << identifier << " at this scope." << std::endl;
@@ -123,7 +124,7 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 		result = "@PUSH_NULL " + std::to_string(identifier_ast->line_number) + "\n";
 	}
 	else {
-		scopes scope = get_scope_of_identifier(identifier_ast->identifier);
+		scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
 
 		if (scope == scope_local) {
 			result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
@@ -166,8 +167,8 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 	return result;
 }
 
-Data get_data_of_variable(std::string const& identifier) {
-	scopes scope = get_scope_of_identifier(identifier);
+Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
+	scopes scope = get_scope_of_identifier(identifier, data_ast);
 
 	if (scope == scope_local) {
 		std::vector<std::unordered_map<std::string, Data>>* area = local_variable_symbols.top();
@@ -274,13 +275,13 @@ std::string get_type_of_attr_target(BaseAST* attr_target) {
 		if (((IdentifierAST*)attr_target)->identifier == "this")
 			type = current_class;
 		else
-			type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier).type;
+			type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier, attr_target).type;
 	}
 	else if (attr_target->type == ast_type::function_call_ast) {
 		type = parsed_function_data[((FunctionCallAST*)attr_target)->function_name]->return_type;
 	}
 	else if (attr_target->type == ast_type::array_refer_ast) {
-		type = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier).type;
+		type = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier, attr_target).type;
 	}
 	return type;
 }
@@ -346,6 +347,7 @@ BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
 	BaseAST* attr_target = ast;
 
 	while (true) {
+		if (ast->attr == nullptr) return nullptr;
 		if (ast->attr->type == bin_expr_ast) {
 			if (lhs_rhs == "lhs")
 				searcher = ((BinExprAST*)searcher->attr)->lhs;
@@ -404,14 +406,13 @@ std::string create_assign_ir(BaseAST* ast, int indentation) {
 	if (last_ast == nullptr) { // single node.
 		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
 
-		scopes scope = get_scope_of_identifier(identifier_ast->identifier);
+		scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
 
 		if (scope == scope_local) {
 			result += "@STORE_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
 				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
 		}
 		else if (scope == scope_class) {
-
 			std::string searcher = current_class;
 			while (parsed_class_data[searcher]->parent_type != "") {
 				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
@@ -545,13 +546,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		append_data(result, create_identifier_ir(array_refer_ast), indentation);
 
-		if (array_refer_ast->attr == nullptr) {
-			for (int i = 0; i < array_refer_ast->indexes.size(); i++) {
-				append_data(result, create_ir(array_refer_ast->indexes[i], indentation), indentation);
-				append_data(result, "@ARRAY_GET " + std::to_string(ast->line_number), indentation);
-			}
-		}
-
 		break;
 	}
 
@@ -561,6 +555,12 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		for (int i = new_ast->parameters.size() - 1; i >= 0; i--) {
 			std::string param = create_ir(new_ast->parameters[i], 0);
 			append_data(result, param, indentation);
+		}
+
+		if (class_id.find(new_ast->class_name) == class_id.end()) {
+			std::wstring class_name;
+			class_name.assign(new_ast->class_name.begin(), new_ast->class_name.end());
+			CHESTNUT_THROW_ERROR(L"Failed to find class name : " + class_name, "FAILED_TO_FIND_CLASS", "003", ast->line_number);
 		}
 
 		unsigned int id = class_id[new_ast->class_name];
@@ -714,8 +714,8 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			line += function_declaration_ast->parameter[i]->var_types[0] + " ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
-				std::make_pair(function_declaration_ast->parameter[i]->names[i],
-					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameter[i]->var_types[i] }
+				std::make_pair(function_declaration_ast->parameter[i]->names[0],
+					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameter[i]->var_types[0] }
 				));
 		}
 
@@ -949,6 +949,14 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		break;
 	};
 
+	case keyboard_ast: {
+		KeyboardAST* keyboard_ast = ((KeyboardAST*)ast);
+
+		append_data(result, "@KEYBOARD " + keyboard_ast->pressed_key + " " + std::to_string(ast->line_number), indentation);
+
+		break;
+	}
+
 	case bin_expr_ast: {
 		BinExprAST* bin_expr_ast = ((BinExprAST*)ast);
 
@@ -1015,11 +1023,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			bin_expr_ast->oper == "^=" ||
 			bin_expr_ast->oper == "%=") {
 
-			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
-			append_data(result, lhs, 0);
-
 			std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
 			append_data(result, rhs, 0);
+
+			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			append_data(result, lhs, 0);
 
 			std::string oper = "";
 
@@ -1098,7 +1106,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		if (scope == scope_class) {
 			function_id = member_function_data[current_class][function_name].id;
-
 			call_type = "@CALL_CLASS";
 		}
 		else if (exist_in_symbol_table(global_function_symbol, function_name)) {
@@ -1110,8 +1117,9 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			call_type = "@CALL_BUILTIN";
 		}
 		else {
-			std::cout << "Error! cannot find function : " << function_name << std::endl;
-			exit(EXIT_FAILURE);
+			std::wstring w_function_name;
+			w_function_name.assign(function_name.begin(), function_name.end());
+			CHESTNUT_THROW_ERROR(L"Failed to find Function : " + w_function_name, "FAILED_TO_FIND_FUNCTION", "005", ast->line_number);
 		}
 
 		std::string line = call_type + " " + std::to_string(function_id)

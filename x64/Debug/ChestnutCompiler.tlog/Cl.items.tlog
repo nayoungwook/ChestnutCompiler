@@ -1,4 +1,6 @@
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\error\sys_error.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_error.obj
 C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ir_generator.obj
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\logger\sys_logger.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_logger.obj
 C:\Users\user\source\repos\Chestnut\ChestnutCompiler\main.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\main.obj
 C:\Users\user\source\repos\Chestnut\ChestnutCompiler\parser\cn_ast.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ast.obj
 C:\Users\user\source\repos\Chestnut\ChestnutCompiler\parser\cn_parser.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_parser.obj

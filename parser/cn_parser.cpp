@@ -335,13 +335,13 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 		types.push_back(type);
 
 		if (tok->type == tok_array) {
-			pull_token_and_expect(tokens, tok_l_sq_bracket);
+			pull_token_and_expect(tokens, tok_l_angle_paren);
 
 			tok = pull_token_and_expect(tokens, -1);
 
 			array_var_type = tok->identifier;
 
-			pull_token_and_expect(tokens, tok_r_sq_bracket);
+			pull_token_and_expect(tokens, tok_r_angle_paren);
 		}
 
 		array_var_types.push_back(array_var_type);
@@ -524,7 +524,7 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
 	bool _is_array_reference = tokens.size() != 0 && check_token(tokens)->type == tok_l_sq_bracket;
 	bool _is_variable_declaration = tokens.size() != 0 && check_token(tokens)->type == tok_colon;
-	bool _is_kb = target->identifier == "kb";
+	bool _is_kb = target->identifier == "key";
 
 	if (_is_assign)
 		return create_assign_ast(tokens, target);

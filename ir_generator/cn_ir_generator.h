@@ -24,7 +24,7 @@ struct _Data {
 	unsigned int id;
 	std::string type;
 } typedef Data;
-Data get_data_of_variable(std::string const& identifier);
+Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast);
 
 static std::unordered_map<std::string, Data> global_variable_symbol; // functions that exist in global area.
 static std::stack<std::vector<std::unordered_map<std::string, Data>>*> local_variable_symbols;// functions that exist in local area.
@@ -51,7 +51,7 @@ void append_data(std::string& target, std::string content, int indentation);
 const std::string create_ir(BaseAST* ast, int indentation);
 
 scopes get_scope_of_function(std::string const& identifier);
-scopes get_scope_of_identifier(std::string const& identifier);
+scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifier_ast);
 
 std::string create_assign_ir(BaseAST* ast, int indentation);
 std::string create_identifier_ir(IdentifierAST* identifier_ast);

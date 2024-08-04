@@ -10,7 +10,7 @@
 
 static char cur_char = ' ', next_char = ' ';
 
-char get_char(std::string& line, int& _i);
+char get_char(std::string& line, int& _i, int line_number);
 
 std::vector<Token*> tokenize(std::string line, int line_number);
-std::string  get_number_literal(std::string& identifier, std::string& line, int& i);
+std::string  get_number_literal(std::string& identifier, std::string& line, int& i, int line_number);

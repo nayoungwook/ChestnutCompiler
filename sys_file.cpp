@@ -19,8 +19,10 @@ std::vector<std::string> get_file(std::string& file_path) {
 		openFile.close();
 	}
 	else {
-		std::cout << "Error! cannot read file : " << file_path << std::endl;
-		exit(EXIT_FAILURE);
+		std::wstring w_path;
+		w_path.assign(file_path.begin(), file_path.end());
+
+		CHESTNUT_THROW_ERROR(L"Failed to find file at : " + w_path, "FAILED_TO_FIND_FILE", "001", 0);
 	}
 	return result;
 }

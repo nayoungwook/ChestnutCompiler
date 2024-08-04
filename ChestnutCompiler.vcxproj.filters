@@ -31,6 +31,18 @@
     <Filter Include="헤더 파일\ir_generator">
       <UniqueIdentifier>{daae8bff-8758-4c59-b5d1-15f08d2944d5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\logger">
+      <UniqueIdentifier>{b0a2693f-ede0-40e0-abb1-c93480b908cc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\error">
+      <UniqueIdentifier>{b242a935-8603-4505-b42d-a994d22bbc24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\logger">
+      <UniqueIdentifier>{c1b653f7-0eb9-4aff-a0b9-7f23691a519e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="헤더 파일\error">
+      <UniqueIdentifier>{0dc4064c-b6e8-4900-aa51-4fa4dcdbccb3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
@@ -51,12 +63,15 @@
     <ClInclude Include="tokenizer\cn_token.h">
       <Filter>헤더 파일\tokenizer</Filter>
     </ClInclude>
+    <ClInclude Include="logger\sys_logger.h">
+      <Filter>헤더 파일\logger</Filter>
+    </ClInclude>
+    <ClInclude Include="error\sys_error.h">
+      <Filter>헤더 파일\error</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="sys_file.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="parser\cn_ast.cpp">
@@ -70,6 +85,15 @@
     </ClCompile>
     <ClCompile Include="ir_generator\cn_ir_generator.cpp">
       <Filter>소스 파일\ir_generator</Filter>
+    </ClCompile>
+    <ClCompile Include="sys_file.cpp">
+      <Filter>소스 파일\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="logger\sys_logger.cpp">
+      <Filter>소스 파일\logger</Filter>
+    </ClCompile>
+    <ClCompile Include="error\sys_error.cpp">
+      <Filter>소스 파일\error</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

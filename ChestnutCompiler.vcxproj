@@ -127,7 +127,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="error\sys_error.h" />
     <ClInclude Include="ir_generator\cn_ir_generator.h" />
+    <ClInclude Include="logger\sys_logger.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="parser\cn_ast.h" />
     <ClInclude Include="parser\cn_parser.h" />
@@ -135,7 +137,9 @@
     <ClInclude Include="tokenizer\cn_tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="error\sys_error.cpp" />
     <ClCompile Include="ir_generator\cn_ir_generator.cpp" />
+    <ClCompile Include="logger\sys_logger.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parser\cn_ast.cpp" />
     <ClCompile Include="parser\cn_parser.cpp" />

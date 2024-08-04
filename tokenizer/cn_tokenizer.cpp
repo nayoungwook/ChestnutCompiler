@@ -1,13 +1,20 @@
 #include "../parser/cn_parser.h"
 
-char get_char(std::string& line, int& _i) {
+char get_char(std::string& line, int& _i, int line_number) {
+
+	if (line.size() <= _i) {
+		std::wstring w_line;
+		w_line.assign(line.begin(), line.end());
+		CHESTNUT_THROW_ERROR(L"Unexpected error at : " + w_line, "UNEXPECTED_ERROR", "002", _i);
+	}
+
 	if (_i + 1 < line.length()) {
 		next_char = line[_i + 1];
 	}
 	return cur_char = line[_i++];
 }
 
-std::string get_number_literal(std::string& identifier, std::string& line, int& i) {
+std::string get_number_literal(std::string& identifier, std::string& line, int& i, int line_number) {
 	std::string number_string = "";
 
 	while (isdigit(cur_char) || cur_char == '.') {
@@ -20,7 +27,7 @@ std::string get_number_literal(std::string& identifier, std::string& line, int& 
 		}
 
 		if ((isdigit(next_char) || next_char == '.'))
-			get_char(line, i);
+			get_char(line, i, line_number);
 		else
 			break;
 	}
@@ -41,7 +48,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 	while (i < line.length()) {
 		identifier = "";
 
-		get_char(line, i);
+		get_char(line, i, line_number);
 
 		if (isspace(cur_char)) continue;
 
@@ -50,7 +57,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			while (isalnum(next_char) || next_char == '_') {
 				if (i >= line.length()) break;
 				identifier += cur_char;
-				get_char(line, i);
+				get_char(line, i, line_number);
 			}
 			identifier += cur_char;
 
@@ -91,7 +98,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 		}
 		else if (isdigit(cur_char)) {
 			type = tok_identifier_number;
-			get_number_literal(identifier, line, i);
+			get_number_literal(identifier, line, i, line_number);
 		}
 		else if (cur_char == '\"') {
 			type = tok_string_identifier;
@@ -106,7 +113,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 					is_inner_quote = true;
 				}
 
-				get_char(line, i);
+				get_char(line, i, line_number);
 
 				if (cur_char == '\"') {
 					if (is_inner_quote) {
@@ -213,6 +220,14 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			type = tok_l_sq_bracket;
 			identifier = "[";
 		}
+		else if (cur_char == '>') {
+			type = tok_r_angle_paren;
+			identifier = ">";
+		}
+		else if (cur_char == '<') {
+			type = tok_l_angle_paren;
+			identifier = "<";
+		}
 		else if (cur_char == '^') {
 			type = tok_pow;
 			identifier = "^";
@@ -281,7 +296,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 				while (isalnum(next_char) || next_char == '_') {
 					if (i >= line.length()) break;
 					identifier += cur_char;
-					get_char(line, i);
+					get_char(line, i, line_number);
 				}
 				identifier += cur_char;
 
