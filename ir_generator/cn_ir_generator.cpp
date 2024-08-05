@@ -24,12 +24,11 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("window", 1));
 	builtin_function_symbol.insert(std::make_pair("load_scene", 2));
 	builtin_function_symbol.insert(std::make_pair("image", 3));
-	builtin_function_symbol.insert(std::make_pair("push", 4));
-	builtin_function_symbol.insert(std::make_pair("len", 5));
+	builtin_function_symbol.insert(std::make_pair("background", 4));
 }
 
 void declare_builtin_variables() {
-	Data data = { 0, "shader" };
+	Data data = { 0, "shader", false };
 	global_variable_symbol.insert(std::make_pair("default_shader", data));
 }
 
@@ -187,6 +186,8 @@ Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
 		Data result;
 		result.id = member_variable_data[current_class][identifier].id;
 		result.type = member_variable_data[current_class][identifier].type;
+		result.is_array = member_variable_data[current_class][identifier].is_array;
+
 		return result;
 	}
 	else if (scope == scope_global) {
@@ -194,7 +195,7 @@ Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
 	}
 }
 
-MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type) {
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type, bool is_array) {
 	MemberVariableData member_variable;
 
 	if (parsed_class_data[type] == nullptr && type != "vector") {
@@ -237,31 +238,74 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 	return member_variable;
 }
 
-MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type) {
+MemberFunctionData get_array_member_function_data(FunctionCallAST* searcher) {
 	MemberFunctionData member_function;
 
-	if (parsed_class_data[type] == nullptr) {
-		std::cout << "We don\'t have \"" << type << "\" as a class.";
-		exit(EXIT_FAILURE);
+	member_function.id = -1;
+
+	if (searcher->function_name == "push") {
+		member_function.id = 0;
+		member_function.name = "push";
+	}
+	else if (searcher->function_name == "size") {
+		member_function.id = 1;
+		member_function.name = "size";
+	}
+	else if (searcher->function_name == "remove") {
+		member_function.id = 2;
+		member_function.name = "remove";
 	}
 
-	if (member_function_data[type].find(searcher->function_name) != member_function_data[type].end()) {
-		member_function.id = member_function_data[type][searcher->function_name].id + get_parent_member_function_size(type);
-		member_function.name = searcher->function_name;
+	return member_function;
+}
+
+MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type, bool is_array) {
+	MemberFunctionData member_function;
+
+	member_function.id = -1;
+
+	if (is_array) {
+		member_function = get_array_member_function_data(searcher);
 	}
 	else {
-		ClassAST* class_ast_searcher = parsed_class_data[type];
+		if (parsed_class_data[type] == nullptr) {
+			std::wstring w_type;
+			w_type.assign(type.begin(), type.end());
 
-		while (true) {
-			if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
-				member_function.id
-					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
-				member_function.name = searcher->function_name;
-			}
-
-			if (class_ast_searcher->parent_type == "") break;
-			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+			CHESTNUT_THROW_ERROR(L"There\'s no " + w_type + L" as a class", "FAIELD_TO_LOAD_VARIBLE_AS_CLASS", "006", searcher->line_number);
 		}
+
+		if (member_function_data[type].find(searcher->function_name) != member_function_data[type].end()) {
+			member_function.id = member_function_data[type][searcher->function_name].id + get_parent_member_function_size(type);
+			member_function.name = searcher->function_name;
+		}
+		else {
+			ClassAST* class_ast_searcher = parsed_class_data[type];
+
+			while (true) {
+				if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
+					member_function.id
+						= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
+					member_function.name = searcher->function_name;
+				}
+
+				if (class_ast_searcher->parent_type == "") break;
+				class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+			}
+		}
+	}
+
+	if (member_function.id == -1) {
+		std::wstring w_type;
+		w_type.assign(type.begin(), type.end());
+
+		std::wstring w_member_function;
+		w_member_function.assign(searcher->function_name.begin(), searcher->function_name.end());
+
+		if (is_array)
+			CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a array", "FAILED_TO_LOAD_FUNCTION_FROM_CLASS", "007", searcher->line_number);
+		else
+			CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_FUNCTION_FROM_CLASS", "007", searcher->line_number);
 	}
 
 	return member_function;
@@ -283,7 +327,37 @@ std::string get_type_of_attr_target(BaseAST* attr_target) {
 	else if (attr_target->type == ast_type::array_refer_ast) {
 		type = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier, attr_target).type;
 	}
+
 	return type;
+}
+
+bool is_attr_target_array(BaseAST* attr_target) {
+	bool is_array;
+
+	// search for target.
+	if (attr_target->type == ast_type::identifier_ast) {
+		if (((IdentifierAST*)attr_target)->identifier == "this")
+			is_array = false;
+		else
+			is_array = get_data_of_variable(((IdentifierAST*)attr_target)->identifier, attr_target).is_array;
+	}
+	else if (attr_target->type == ast_type::function_call_ast) {
+		std::string function_name = ((FunctionCallAST*)attr_target)->function_name;
+
+		if (parsed_function_data.find(function_name) == parsed_function_data.end()) {
+			std::wstring w_function_name;
+			w_function_name.assign(function_name.begin(), function_name.end());
+
+			CHESTNUT_THROW_ERROR(L"Failed to find function " + w_function_name, "FAILED_TO_FIND_FUNCTION_NAME", "008", attr_target->line_number);
+		}
+
+		is_array = parsed_function_data[function_name]->array_return_type != "";
+	}
+	else if (attr_target->type == ast_type::array_refer_ast) {
+		is_array = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier, attr_target).is_array;
+	}
+
+	return is_array && attr_target->type != array_refer_ast;
 }
 
 std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs_rhs) {
@@ -305,27 +379,29 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 		}
 
 		std::string type = get_type_of_attr_target(attr_target);
+		bool is_array = is_attr_target_array(attr_target);
 
 		//append attribute data.
 		if (searcher->type == ast_type::identifier_ast) {
-			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type);
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
 
 			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
 				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
 		}
 		else if (searcher->type == ast_type::function_call_ast) {
-			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, type);
+			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, type, is_array);
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
 				std::string param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
 			}
+
 			append_data(result, "@CALL_ATTR " + std::to_string(member_function.id)
 				+ " (" + member_function.name + ") "
 				+ std::to_string(((FunctionCallAST*)searcher)->parameters.size()) + " " + std::to_string(searcher->line_number) + "\n", 0);
 		}
 		else if (searcher->type == ast_type::array_refer_ast) {
-			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type);
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
 
 			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
 				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
@@ -436,8 +512,9 @@ std::string create_assign_ir(BaseAST* ast, int indentation) {
 
 		BaseAST* attr_target = get_last_ast(identifier_ast, "lhs");
 		std::string type = get_type_of_attr_target(attr_target);
+		bool is_array = is_attr_target_array(attr_target);
 
-		MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)last_ast, type);
+		MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)last_ast, type, is_array);
 
 		result += "@STORE_ATTR " + std::to_string(member_variable.id)
 			+ " (" + member_variable.name + ") " + std::to_string(attr_target->line_number) + "\n";
@@ -918,7 +995,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				store_type = "@STORE_GLOBAL";
 				id = (unsigned int)global_variable_symbol.size();
 				global_variable_symbol.insert(std::make_pair(variable_declaration_ast->names[i],
-					Data{ id, variable_declaration_ast->var_types[i] }
+					Data{ id, variable_declaration_ast->var_types[i], variable_declaration_ast->array_var_types[i] != "" }
 				));
 				break;
 			case scope_local: {
@@ -928,7 +1005,8 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				id = generate_local_variable_id(local_variable_symbol);
 
 				local_variable_symbol->at(local_variable_symbol->size() - 1).insert(std::make_pair(variable_declaration_ast->names[i],
-					Data{ id, variable_declaration_ast->var_types[i] }));
+					Data{ id, variable_declaration_ast->var_types[i],
+					variable_declaration_ast->array_var_types[i] != "" }));
 
 				break;
 			}

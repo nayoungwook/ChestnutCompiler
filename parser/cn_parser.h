@@ -20,4 +20,5 @@ struct MemberFunctionData {
 struct MemberVariableData {
 	unsigned int id;
 	std::string name, access_modifier, type;
+	bool is_array = false;
 };

@@ -23,6 +23,7 @@ static scopes current_scope = scope_global;
 struct _Data {
 	unsigned int id;
 	std::string type;
+	bool is_array;
 } typedef Data;
 Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast);
 
@@ -56,10 +57,13 @@ scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifie
 std::string create_assign_ir(BaseAST* ast, int indentation);
 std::string create_identifier_ir(IdentifierAST* identifier_ast);
 
-MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type);
-MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type);
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type, bool is_array);
+
+MemberFunctionData get_array_member_function_data(FunctionCallAST* searcher);
+MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type, bool is_array);
 
 std::string get_type_of_attr_target(BaseAST* attr_target);
+bool is_attr_target_array(BaseAST* attr_target);
 
 BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs);
 BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs);

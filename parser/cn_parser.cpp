@@ -586,6 +586,16 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	pull_token_and_expect(tokens, tok_colon);
 	std::string return_type = pull_token_and_expect(tokens, -1)->identifier;
 
+	std::string array_var_type = "";
+
+	if (return_type == "array") {
+		pull_token_and_expect(tokens, tok_l_angle_paren);
+
+		array_var_type = pull_token_and_expect(tokens, -1)->identifier;
+
+		pull_token_and_expect(tokens, tok_r_angle_paren);
+	}
+
 	std::vector<Token*> body_tokens = get_block_tokens(tokens);
 	std::vector<BaseAST*> body;
 
@@ -593,7 +603,7 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 		body.push_back(parse(body_tokens));
 	}
 
-	ast = new FunctionDeclarationAST(name, parameters, return_type);
+	ast = new FunctionDeclarationAST(name, parameters, return_type, array_var_type);
 	ast->body = body;
 
 	parsed_function_data.insert(std::make_pair(name, ast));
@@ -614,10 +624,13 @@ void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::st
 			data.access_modifier = ast->access_modifier;
 			data.id = member_variables.size();
 
-			if (ast->var_types[j] != "array")
+			if (ast->var_types[j] != "array") {
 				data.type = ast->var_types[j];
-			else
+			}
+			else {
 				data.type = ast->array_var_types[j];
+				data.is_array = true;
+			}
 
 			member_variables.insert(std::make_pair(name, data));
 		}
@@ -759,7 +772,7 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
 		if (!satisfied.second) {
 			std::vector<VariableDeclarationAST*> parameters;
-			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
+			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void", "");
 			function_declaration_ast->access_modifier = "public";
 			function_asts.push_back(function_declaration_ast);
 		}
@@ -832,7 +845,7 @@ SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
 		if (!satisfied.second) {
 			std::vector<VariableDeclarationAST*> parameters;
-			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void");
+			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void", "");
 			function_declaration_ast->access_modifier = "public";
 			function_asts.push_back(function_declaration_ast);
 		}

@@ -35,6 +35,7 @@ void write_file(std::string file_path, std::string content) {
 	current_path.assign(wcurrent_dir.begin(), wcurrent_dir.end());
 
 	file_path = current_path + "\\" + file_path;
+	std::cout << file_path << std::endl;
 
 	std::ofstream writeFile(file_path.data());
 	if (writeFile.is_open()) {
