@@ -59,8 +59,6 @@ enum token_type {
 	tok_cast = 63,
 
 	tok_int = 64, tok_float = 65, tok_bool = 66, tok_load = 67,
-
-	tok_l_angle_paren = 68, tok_r_angle_paren = 69,
 };
 
 static std::map<int, std::string> token_string = {

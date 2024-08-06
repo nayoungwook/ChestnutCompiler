@@ -176,12 +176,12 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 		}
 		else if (cur_char == '>') {
 			if (next_char == '=') {
-				type = tok_eq_greater;
+				type = tok_eq_lesser;
 				identifier = ">=";
 				i++;
 			}
 			else {
-				type = tok_greater;
+				type = tok_lesser;
 				identifier = ">";
 			}
 		}
@@ -219,14 +219,6 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 		else if (cur_char == '[') {
 			type = tok_l_sq_bracket;
 			identifier = "[";
-		}
-		else if (cur_char == '>') {
-			type = tok_r_angle_paren;
-			identifier = ">";
-		}
-		else if (cur_char == '<') {
-			type = tok_l_angle_paren;
-			identifier = "<";
 		}
 		else if (cur_char == '^') {
 			type = tok_pow;

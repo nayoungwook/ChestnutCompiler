@@ -283,13 +283,19 @@ Token* check_token(std::vector<Token*>& tokens) {
 
 Token* pull_token_and_expect(std::vector<Token*>& tokens, int token_type) { // if token type is -1 , it can be anything.
 	if (tokens.size() == 0) {
-		//		new UnexpectedTokenError("null", "null", pull->line);
+		CHESTNUT_THROW_ERROR(L"there\'s no token.", "NO_TOKEN", "010", -1);
 	}
 	Token* pull = tokens.front();
 	tokens.erase(tokens.begin());
 
 	if (token_type != -1 && pull->type != token_type) {
-		//		new UnexpectedTokenError(pull->identifier, token_string[token_type], pull->line);
+		std::wstring w_expected_token;
+		w_expected_token.assign(token_string[token_type].begin(), token_string[token_type].end());
+
+		std::wstring w_pulled_token;
+		w_pulled_token.assign(pull->identifier.begin(), pull->identifier.end());
+
+		CHESTNUT_THROW_ERROR(L"Unexpected syntax error, expected : " + w_expected_token + L" but pulled : " + w_pulled_token, "UNEXPECTED_TOKEN", "009", pull->line);
 	}
 
 	return pull;
@@ -335,13 +341,13 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 		types.push_back(type);
 
 		if (tok->type == tok_array) {
-			pull_token_and_expect(tokens, tok_l_angle_paren);
+			pull_token_and_expect(tokens, tok_greater);
 
 			tok = pull_token_and_expect(tokens, -1);
 
 			array_var_type = tok->identifier;
 
-			pull_token_and_expect(tokens, tok_r_angle_paren);
+			pull_token_and_expect(tokens, tok_lesser);
 		}
 
 		array_var_types.push_back(array_var_type);
@@ -589,11 +595,11 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	std::string array_var_type = "";
 
 	if (return_type == "array") {
-		pull_token_and_expect(tokens, tok_l_angle_paren);
+		pull_token_and_expect(tokens, tok_greater);
 
 		array_var_type = pull_token_and_expect(tokens, -1)->identifier;
 
-		pull_token_and_expect(tokens, tok_r_angle_paren);
+		pull_token_and_expect(tokens, tok_lesser);
 	}
 
 	std::vector<Token*> body_tokens = get_block_tokens(tokens);
@@ -694,6 +700,8 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 	ast->functions = function_asts;
 	ast->variables = variable_asts;
 
+	parsed_class_data.insert(std::make_pair(name, ast));
+	class_id.insert(std::make_pair(name, class_id.size()));
 	appply_member_data(ast, function_asts);
 
 	std::vector<Token*>().swap(body_tokens);
@@ -1238,7 +1246,7 @@ CastAST* create_cast_ast(std::vector<Token*>& tokens) {
 LoadAST* create_load_ast(std::vector<Token*>& tokens) {
 	LoadAST* result = nullptr;
 
-	std::string name = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 	std::string path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
 
 	result = new LoadAST(name, path);

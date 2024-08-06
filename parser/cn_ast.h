@@ -145,13 +145,13 @@ private:
 public:
 	bool is_static = false;
 	std::string return_type, function_name, access_modifier = "default", array_return_type = "";
-	std::vector<VariableDeclarationAST*> parameter;
+	std::vector<VariableDeclarationAST*> parameters;
 	std::vector<BaseAST*> body;
 
 	FunctionDeclarationAST(const std::string& function_name, std::vector<VariableDeclarationAST*>& parameter, const std::string& return_type,
 		std::string const& array_return_type)
 		: function_name(function_name), return_type(return_type), array_return_type(array_return_type) {
-		this->parameter = parameter;
+		this->parameters = parameter;
 
 		type = function_declaration_ast;
 	};
@@ -162,7 +162,7 @@ private:
 public:
 	ConstructorDeclarationAST(std::vector<VariableDeclarationAST*>& parameter)
 		: FunctionDeclarationAST("constructor", parameter, "void", "") {
-		this->parameter = parameter;
+		this->parameters = parameter;
 
 		type = constructor_declaration_ast;
 	};

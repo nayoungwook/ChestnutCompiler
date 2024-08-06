@@ -50,6 +50,7 @@ void declare_builtin_functions();
 void append_data(std::string& target, std::string content, int indentation);
 
 const std::string create_ir(BaseAST* ast, int indentation);
+void create_super_call(BaseAST* ast, std::string& result, int indentation);
 
 scopes get_scope_of_function(std::string const& identifier);
 scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifier_ast);
@@ -59,7 +60,7 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast);
 
 MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type, bool is_array);
 
-MemberFunctionData get_array_member_function_data(FunctionCallAST* searcher);
+MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher);
 MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type, bool is_array);
 
 std::string get_type_of_attr_target(BaseAST* attr_target);

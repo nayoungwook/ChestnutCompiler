@@ -131,7 +131,6 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 
 		}
 		else if (scope == scope_class) {
-
 			std::string searcher = current_class;
 			while (parsed_class_data[searcher]->parent_type != "") {
 				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
@@ -238,7 +237,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 	return member_variable;
 }
 
-MemberFunctionData get_array_member_function_data(FunctionCallAST* searcher) {
+MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher) {
 	MemberFunctionData member_function;
 
 	member_function.id = -1;
@@ -265,7 +264,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 	member_function.id = -1;
 
 	if (is_array) {
-		member_function = get_array_member_function_data(searcher);
+		member_function = get_member_function_of_array(searcher);
 	}
 	else {
 		if (parsed_class_data[type] == nullptr) {
@@ -418,7 +417,7 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 	return result;
 }
 
-BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
+BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // set nullptr to last ast of identifier.
 	BaseAST* searcher = ast;
 	BaseAST* attr_target = ast;
 
@@ -444,7 +443,7 @@ BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
 	return nullptr;
 }
 
-BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
+BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // just 'get' the last ast of identifier.
 	BaseAST* searcher = ast;
 	BaseAST* attr_target = ast;
 
@@ -469,17 +468,20 @@ BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) {
 	}
 	return nullptr;
 }
+
 std::string create_assign_ir(BaseAST* ast, int indentation) {
 	BinExprAST* bin_ast = ((BinExprAST*)ast);
 
-	BaseAST* last_ast = extract_last_ast(bin_ast->lhs, "lhs");
+	BaseAST* last_ast = extract_last_ast(bin_ast->lhs, "lhs"); // extract the last ast for make the ir of 'store'
 
 	std::string result = "";
 
 	if (bin_ast->rhs != nullptr) // if rhs is not already declared.
 		result += create_ir(bin_ast->rhs, indentation);
 
-	if (last_ast == nullptr) { // single node.
+	bool is_single_node = last_ast == nullptr;
+
+	if (is_single_node) { // store ir for the single node.
 		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
 
 		scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
@@ -506,11 +508,12 @@ std::string create_assign_ir(BaseAST* ast, int indentation) {
 				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
 		}
 	}
-	else { // for attr.
+	else { // store ir for attr.
 		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
 		result += create_identifier_ir(identifier_ast);
 
 		BaseAST* attr_target = get_last_ast(identifier_ast, "lhs");
+
 		std::string type = get_type_of_attr_target(attr_target);
 		bool is_array = is_attr_target_array(attr_target);
 
@@ -578,6 +581,19 @@ unsigned int get_parent_member_function_size(std::string const& class_name) {
 	}
 
 	return parent_id_size;
+}
+
+void create_super_call(BaseAST* ast, std::string& result, int indentation) {
+	FunctionCallAST* function_call_ast = (FunctionCallAST*)ast;
+	std::string line = "@SUPER_CALL " + std::to_string(function_call_ast->parameters.size())
+		+ " " + std::to_string(ast->line_number);
+
+	for (int i = function_call_ast->parameters.size() - 1; i >= 0; i--) {
+		std::string param = create_ir(function_call_ast->parameters[i], 0);
+		append_data(result, param, indentation);
+	}
+
+	append_data(result, line, 1);
 }
 
 const std::string create_ir(BaseAST* ast, int indentation) {
@@ -725,14 +741,14 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
-		for (int i = 0; i < constructor_declaration_ast->parameter.size(); i++) {
-			VariableDeclarationAST* param = constructor_declaration_ast->parameter[i];
+		for (int i = 0; i < constructor_declaration_ast->parameters.size(); i++) {
+			VariableDeclarationAST* param = constructor_declaration_ast->parameters[i];
 
 			line += param->names[0] + " " + param->var_types[0] + " ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
-				std::make_pair(constructor_declaration_ast->parameter[i]->names[i],
-					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameter[i]->var_types[i] }
+				std::make_pair(constructor_declaration_ast->parameters[i]->names[i],
+					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[i] }
 				));
 		}
 
@@ -785,18 +801,19 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		std::string line = "FUNC " + std::to_string(id) + " (" + function_name + ") ";
 
-		line += function_declaration_ast->access_modifier + " ";
+		line += function_declaration_ast->access_modifier + " " + function_declaration_ast->return_type + " ";
 
-		for (int i = 0; i < function_declaration_ast->parameter.size(); i++) {
-			line += function_declaration_ast->parameter[i]->var_types[0] + " ";
+		for (int i = 0; i < function_declaration_ast->parameters.size(); i++) {
+			line += function_declaration_ast->parameters[i]->names[0] + " ";
+			line += function_declaration_ast->parameters[i]->var_types[0] + " ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
-				std::make_pair(function_declaration_ast->parameter[i]->names[0],
-					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameter[i]->var_types[0] }
+				std::make_pair(function_declaration_ast->parameters[i]->names[0],
+					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
 				));
 		}
 
-		line += function_declaration_ast->return_type + " {\n";
+		line += " {\n";
 
 		for (BaseAST* ast : function_declaration_ast->body) {
 			std::string body = create_ir(ast, indentation + 1);
@@ -1159,21 +1176,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	}
 
 	case function_call_ast: {
-
 		FunctionCallAST* function_call_ast = ((FunctionCallAST*)ast);
 		std::string function_name = function_call_ast->function_name;
 
 		if (function_name == "super") {
-			std::string line = "@SUPER_CALL " + std::to_string(function_call_ast->parameters.size())
-				+ " " + std::to_string(ast->line_number);
-
-			for (int i = function_call_ast->parameters.size() - 1; i >= 0; i--) {
-				std::string param = create_ir(function_call_ast->parameters[i], 0);
-				append_data(result, param, indentation);
-			}
-
-			append_data(result, line, 1);
-
+			create_super_call(ast, result, indentation);
 			break;
 		}
 
@@ -1182,15 +1189,15 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		scopes scope = get_scope_of_function(function_name);
 
-		if (scope == scope_class) {
+		if (scope == scope_class) { // call function in current class.
 			function_id = member_function_data[current_class][function_name].id;
 			call_type = "@CALL_CLASS";
 		}
-		else if (exist_in_symbol_table(global_function_symbol, function_name)) {
+		else if (exist_in_symbol_table(global_function_symbol, function_name)) { // call function in global area.
 			function_id = global_function_symbol[function_name];
 			call_type = "@CALL_GLOBAL";
 		}
-		else if (exist_in_symbol_table(builtin_function_symbol, function_name)) {
+		else if (exist_in_symbol_table(builtin_function_symbol, function_name)) { // call function in builtin area.
 			function_id = builtin_function_symbol[function_name];
 			call_type = "@CALL_BUILTIN";
 		}
