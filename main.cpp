@@ -6,7 +6,7 @@ int main(int argc, char* args[]) {
 
 	if (argc == 1) {
 		CHESTNUT_LOG(L"With no arguments, the process is on the \'debug mode\'", log_level::log_warn);
-		CHESTNUT_LOG(L"If it is not your intention, please type \'chestnut -help.\'", log_level::log_warn);
+		CHESTNUT_LOG(L"If it was not your intention, please type \'chestnut -help.\' to get help.", log_level::log_warn);
 
 		std::string file_name = "main.cn";
 

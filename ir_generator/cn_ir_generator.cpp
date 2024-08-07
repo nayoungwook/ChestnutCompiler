@@ -749,7 +749,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[i],
 					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[i] }
-				));
+			));
 		}
 
 		line += "{";
@@ -810,7 +810,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += " {\n";
@@ -1007,12 +1007,17 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			std::string store_type = "";
 			unsigned int id = 0;
 
+			std::string type = variable_declaration_ast->var_types[i];
+
+			if (variable_declaration_ast->array_var_types[i] != "")
+				type = variable_declaration_ast->array_var_types[i];
+
 			switch (current_scope) {
 			case scope_global:
 				store_type = "@STORE_GLOBAL";
 				id = (unsigned int)global_variable_symbol.size();
 				global_variable_symbol.insert(std::make_pair(variable_declaration_ast->names[i],
-					Data{ id, variable_declaration_ast->var_types[i], variable_declaration_ast->array_var_types[i] != "" }
+					Data{ id, type, variable_declaration_ast->array_var_types[i] != "" }
 				));
 				break;
 			case scope_local: {
@@ -1022,7 +1027,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 				id = generate_local_variable_id(local_variable_symbol);
 
 				local_variable_symbol->at(local_variable_symbol->size() - 1).insert(std::make_pair(variable_declaration_ast->names[i],
-					Data{ id, variable_declaration_ast->var_types[i],
+					Data{ id,  type,
 					variable_declaration_ast->array_var_types[i] != "" }));
 
 				break;
