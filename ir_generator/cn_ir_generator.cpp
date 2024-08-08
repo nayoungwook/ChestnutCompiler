@@ -130,14 +130,24 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
 
 		}
-		else if (scope == scope_class) {
+		else if (scope == scope_class) { // find variable in current class declaration.
 			std::string searcher = current_class;
 			while (parsed_class_data[searcher]->parent_type != "") {
-				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
+				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) { // member variable found.
 					break;
 				}
 
-				searcher = parsed_class_data[searcher]->parent_type;
+				searcher = parsed_class_data[searcher]->parent_type; // search for parent.
+			}
+
+			// but, it was private.
+			if (member_variable_data[searcher][identifier_ast->identifier].access_modifier == "private") {
+				std::wstring w_name;
+				w_name.assign(identifier_ast->identifier.begin(), identifier_ast->identifier.end());
+
+				CHESTNUT_THROW_ERROR(L"Variable you attempt to access \'" + w_name + L"\' is not public. create getter or setter "
+					"\n\t\t\t(or just set it public.)"
+					, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "011", identifier_ast->line_number);
 			}
 
 			result = "@LOAD_CLASS " + std::to_string(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
@@ -196,6 +206,7 @@ Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
 
 MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type, bool is_array) {
 	MemberVariableData member_variable;
+	member_variable.id = -1;
 
 	if (parsed_class_data[type] == nullptr && type != "vector") {
 		std::cout << "We don\'t have \"" << type << "\" as a class. for read member var";
@@ -213,11 +224,11 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 		member_variable.name = searcher->identifier;
 	}
 	else {
-		if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) {
+		if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) { // find member variables at (type)
 			member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
 			member_variable.name = searcher->identifier;
 		}
-		else {
+		else { // find for parent memories.
 			ClassAST* class_ast_searcher = parsed_class_data[type];
 
 			while (true) {
@@ -231,6 +242,35 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 				class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 
 			}
+		}
+	}
+
+
+	if (member_variable.id == -1) {
+		std::wstring w_type;
+		w_type.assign(type.begin(), type.end());
+
+		std::wstring w_member_function;
+		w_member_function.assign(searcher->identifier.begin(), searcher->identifier.end());
+
+		CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_VARIABLE_FROM_CLASS", "007", searcher->line_number);
+	}
+	else {
+		bool able_to_access = true;
+
+		if (type == current_class) { // tried to access inner class.
+			if (member_variable.access_modifier == "private") able_to_access = false;
+		}
+		else { // tried to access from outside of class.
+			if (member_variable.access_modifier != "public") able_to_access = false;
+		}
+
+		if (!able_to_access) {
+			std::wstring w_name;
+			w_name.assign(searcher->identifier.begin(), searcher->identifier.end());
+
+			CHESTNUT_THROW_ERROR(L"Variable you attempt to access \'" + w_name + L"\' is private. create getter or setter (or just set it public, protected.)"
+				, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "010", searcher->line_number);
 		}
 	}
 
@@ -305,6 +345,24 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 			CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a array", "FAILED_TO_LOAD_FUNCTION_FROM_CLASS", "007", searcher->line_number);
 		else
 			CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_FUNCTION_FROM_CLASS", "007", searcher->line_number);
+	}
+	else {
+		bool able_to_access = true;
+
+		if (type == current_class) { // tried to access inner class.
+			if (member_function.access_modifier == "private") able_to_access = false;
+		}
+		else { // tried to access from outside of class.
+			if (member_function.access_modifier != "public") able_to_access = false;
+		}
+
+		if (!able_to_access) {
+			std::wstring w_name;
+			w_name.assign(searcher->function_name.begin(), searcher->function_name.end());
+
+			CHESTNUT_THROW_ERROR(L"Function you attempt to access \'" + w_name + L"\' is private. create getter or setter (or just set it public, protected.)"
+				, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "010", searcher->line_number);
+		}
 	}
 
 	return member_function;
@@ -749,7 +807,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[i],
 					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[i] }
-			));
+				));
 		}
 
 		line += "{";
@@ -810,7 +868,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
 		line += " {\n";
@@ -1197,6 +1255,16 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		if (scope == scope_class) { // call function in current class.
 			function_id = member_function_data[current_class][function_name].id;
 			call_type = "@CALL_CLASS";
+
+			bool able_to_access = member_function_data[current_class][function_name].access_modifier != "private";
+
+			if (!able_to_access) {
+				std::wstring w_name;
+				w_name.assign(function_name.begin(), function_name.end());
+
+				CHESTNUT_THROW_ERROR(L"Function you attempt to access \'" + w_name + L"\' is private. create getter or setter (or just set it public, protected.)"
+					, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "010", ast->line_number);
+			}
 		}
 		else if (exist_in_symbol_table(global_function_symbol, function_name)) { // call function in global area.
 			function_id = global_function_symbol[function_name];

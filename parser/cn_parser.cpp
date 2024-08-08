@@ -1331,6 +1331,10 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		else if (_ast->type == variable_declaration_ast) {
 			dynamic_cast<VariableDeclarationAST*>(_ast)->access_modifier = access_modifier;
 		}
+		else {
+			CHESTNUT_THROW_ERROR(L"Unexpected syntax error, with access modifier, you must decalre variable or function.",
+				"UNEXPECTED_TOKEN", "009", first_token->line);
+		}
 
 		result = _ast;
 	}
