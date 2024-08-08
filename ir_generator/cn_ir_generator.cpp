@@ -132,16 +132,18 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 		}
 		else if (scope == scope_class) { // find variable in current class declaration.
 			std::string searcher = current_class;
+			bool found_in_parent = false;
 			while (parsed_class_data[searcher]->parent_type != "") {
 				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) { // member variable found.
 					break;
 				}
 
 				searcher = parsed_class_data[searcher]->parent_type; // search for parent.
+				found_in_parent = true;
 			}
 
-			// but, it was private.
-			if (member_variable_data[searcher][identifier_ast->identifier].access_modifier == "private") {
+			// but, it was found in parnet and access modifier was private.
+			if (member_variable_data[searcher][identifier_ast->identifier].access_modifier == "private" && found_in_parent) {
 				std::wstring w_name;
 				w_name.assign(identifier_ast->identifier.begin(), identifier_ast->identifier.end());
 
@@ -213,6 +215,8 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 		exit(EXIT_FAILURE);
 	}
 
+	bool found_in_parent_memory = false;
+
 	if (type == "vector") {
 		if (searcher->identifier == "x")
 			member_variable.id = 0;
@@ -224,27 +228,22 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 		member_variable.name = searcher->identifier;
 	}
 	else {
-		if (member_variable_data[type].find(searcher->identifier) != member_variable_data[type].end()) { // find member variables at (type)
-			member_variable.id = member_variable_data[type][searcher->identifier].id + get_parent_member_variable_size(type);
-			member_variable.name = searcher->identifier;
-		}
-		else { // find for parent memories.
-			ClassAST* class_ast_searcher = parsed_class_data[type];
+		ClassAST* class_ast_searcher = parsed_class_data[type];
 
-			while (true) {
-				if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
-					member_variable.id
-						= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
-					member_variable.name = searcher->identifier;
-				}
+		while (true) {
+			if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
+				member_variable.id
+					= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
 
-				if (class_ast_searcher->parent_type == "") break;
-				class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
-
+				member_variable.name = searcher->identifier;
+				member_variable.access_modifier = member_variable_data[class_ast_searcher->name][searcher->identifier].access_modifier;
 			}
+
+			if (class_ast_searcher->parent_type == "") break;
+			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+			found_in_parent_memory = true;
 		}
 	}
-
 
 	if (member_variable.id == -1) {
 		std::wstring w_type;
@@ -258,10 +257,10 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 	else {
 		bool able_to_access = true;
 
-		if (type == current_class) { // tried to access inner class.
+		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
 			if (member_variable.access_modifier == "private") able_to_access = false;
 		}
-		else { // tried to access from outside of class.
+		else if (type != current_class) { // tried to access from outside of class.
 			if (member_variable.access_modifier != "public") able_to_access = false;
 		}
 
@@ -303,6 +302,9 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 
 	member_function.id = -1;
 
+	bool found_in_parent_memory = false;
+
+
 	if (is_array) {
 		member_function = get_member_function_of_array(searcher);
 	}
@@ -314,23 +316,19 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 			CHESTNUT_THROW_ERROR(L"There\'s no " + w_type + L" as a class", "FAIELD_TO_LOAD_VARIBLE_AS_CLASS", "006", searcher->line_number);
 		}
 
-		if (member_function_data[type].find(searcher->function_name) != member_function_data[type].end()) {
-			member_function.id = member_function_data[type][searcher->function_name].id + get_parent_member_function_size(type);
-			member_function.name = searcher->function_name;
-		}
-		else {
-			ClassAST* class_ast_searcher = parsed_class_data[type];
+		ClassAST* class_ast_searcher = parsed_class_data[type];
 
-			while (true) {
-				if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
-					member_function.id
-						= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
-					member_function.name = searcher->function_name;
-				}
-
-				if (class_ast_searcher->parent_type == "") break;
-				class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+		while (true) {
+			if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
+				member_function.id
+					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
+				member_function.name = searcher->function_name;
+				member_function.access_modifier = member_function_data[class_ast_searcher->name][searcher->function_name].access_modifier;
 			}
+
+			if (class_ast_searcher->parent_type == "") break;
+			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
+			found_in_parent_memory = true;
 		}
 	}
 
@@ -349,10 +347,10 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 	else {
 		bool able_to_access = true;
 
-		if (type == current_class) { // tried to access inner class.
+		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
 			if (member_function.access_modifier == "private") able_to_access = false;
 		}
-		else { // tried to access from outside of class.
+		else if (type != current_class) { // tried to access from outside of class.
 			if (member_function.access_modifier != "public") able_to_access = false;
 		}
 
@@ -360,7 +358,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 			std::wstring w_name;
 			w_name.assign(searcher->function_name.begin(), searcher->function_name.end());
 
-			CHESTNUT_THROW_ERROR(L"Function you attempt to access \'" + w_name + L"\' is private. create getter or setter (or just set it public, protected.)"
+			CHESTNUT_THROW_ERROR(L"Function you attempt to access \'" + w_name + L"\' is unaccessible. create getter or setter (or just set it public, protected.)"
 				, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "010", searcher->line_number);
 		}
 	}
@@ -784,6 +782,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		append_data(result, line, indentation);
 
 		current_scope = backup_scope;
+		current_class = "";
 
 		break;
 	}
