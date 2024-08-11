@@ -230,6 +230,11 @@ std::vector<std::vector<Token*>> get_function_parameter_tokens(std::vector<Token
 
 		if (function_parameter_tokens[i]->type == tok_comma && paren_count == 0) {
 			result.push_back(_tokens);
+
+			if (_tokens.size() == 0) {
+				CHESTNUT_THROW_ERROR(L"Invalid parameter. Please check your parameter", "INVALID_PARAMETER", "012", function_parameter_tokens[0]->line);
+			}
+
 			_tokens.clear();
 			continue;
 		}
@@ -529,18 +534,10 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 	bool _is_incre = tokens.size() != 0 && check_token(tokens)->type == tok_incre;
 	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
 	bool _is_array_reference = tokens.size() != 0 && check_token(tokens)->type == tok_l_sq_bracket;
-	bool _is_variable_declaration = tokens.size() != 0 && check_token(tokens)->type == tok_colon;
 	bool _is_kb = target->identifier == "key";
 
 	if (_is_assign)
 		return create_assign_ast(tokens, target);
-	else if (_is_variable_declaration) {
-		std::vector<Token*> _tokens;
-		_tokens.push_back(new Token(tok_identifier, target->identifier, target->line_number));
-		_tokens.insert(_tokens.end(), tokens.begin(), tokens.end());
-		tokens = _tokens;
-		return create_variable_declaration_ast(tokens);
-	}
 	else if (_is_function_call)
 		return create_function_call_ast(tokens, target);
 	else if (_is_incre)
@@ -735,6 +732,7 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST("100") , new NumberAST("100"), new NumberAST("0"), new IdentifierAST("null") };
 
 	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _var_types, _decl.size());
+	_builtin_decl->access_modifier = "public";
 
 	variable_asts.push_back(_builtin_decl);
 
@@ -1311,6 +1309,9 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 	}
 	else if (first_token->type == tok_func) {
 		result = create_function_declaration_ast(tokens);
+	}
+	else if (first_token->type == tok_var) {
+		return create_variable_declaration_ast(tokens);
 	}
 	else if (first_token->type == tok_class || first_token->type == tok_object || first_token->type == tok_scene) {
 		if (first_token->type == tok_class)

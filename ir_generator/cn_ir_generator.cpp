@@ -85,7 +85,7 @@ scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifie
 	CHESTNUT_THROW_ERROR(L"Failed to find identifier : " + w_identifier, "FAILED_TO_FIND_IDENTIFIER", "004", identifier_ast->line_number);
 }
 
-scopes get_scope_of_function(std::string const& identifier) {
+scopes get_scope_of_function(std::string const& identifier, int line_number) {
 	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 	if (exist_in_symbol_table(global_function_symbol, identifier)) {
@@ -109,8 +109,9 @@ scopes get_scope_of_function(std::string const& identifier) {
 		}
 	}
 
-	std::cout << "Failed to find function named : " << identifier << " at this scope." << std::endl;
-	exit(EXIT_FAILURE);
+	std::wstring w_function_name;
+	w_function_name.assign(identifier.begin(), identifier.end());
+	CHESTNUT_THROW_ERROR(L"Failed to find function " + w_function_name, "FAILED_TO_FIND_FUNCTION_NAME", "008", line_number);
 }
 
 std::string create_identifier_ir(IdentifierAST* identifier_ast) {
@@ -254,7 +255,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 
 		CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_VARIABLE_FROM_CLASS", "007", searcher->line_number);
 	}
-	else {
+	else if (type != "vector") {
 		bool able_to_access = true;
 
 		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
@@ -344,7 +345,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 		else
 			CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_FUNCTION_FROM_CLASS", "007", searcher->line_number);
 	}
-	else {
+	else if (!is_array) {
 		bool able_to_access = true;
 
 		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
@@ -657,7 +658,6 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	std::string result = "";
 
 	switch (ast->type) {
-
 	case load_ast: {
 		LoadAST* load_ast = (LoadAST*)ast;
 		append_data(result, "#LOAD " + load_ast->name + " " + load_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
@@ -1249,7 +1249,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		unsigned int function_id = -1;
 		std::string call_type = "";
 
-		scopes scope = get_scope_of_function(function_name);
+		scopes scope = get_scope_of_function(function_name, function_call_ast->line_number);
 
 		if (scope == scope_class) { // call function in current class.
 			function_id = member_function_data[current_class][function_name].id;

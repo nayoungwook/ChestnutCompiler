@@ -52,7 +52,7 @@ void append_data(std::string& target, std::string content, int indentation);
 const std::string create_ir(BaseAST* ast, int indentation);
 void create_super_call(BaseAST* ast, std::string& result, int indentation);
 
-scopes get_scope_of_function(std::string const& identifier);
+scopes get_scope_of_function(std::string const& identifier, int line_number);
 scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifier_ast);
 
 std::string create_assign_ir(BaseAST* ast, int indentation);

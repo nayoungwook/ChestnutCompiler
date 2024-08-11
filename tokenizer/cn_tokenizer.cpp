@@ -87,6 +87,7 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			if (identifier == "class") type = tok_class;
 
 			if (identifier == "new") type = tok_new;
+			if (identifier == "var") type = tok_var;
 
 			if (identifier == "true") type = tok_true;
 			if (identifier == "false") type = tok_false;

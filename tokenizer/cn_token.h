@@ -26,6 +26,7 @@ enum token_type {
 
 	tok_func = 22, tok_if = 23, tok_else = 24, tok_for = 25, tok_while = 26,
 
+	tok_var = 27,
 	tok_number = 28, tok_char = 29, tok_string = 30,
 
 	tok_import = 31, tok_basic = 32,
