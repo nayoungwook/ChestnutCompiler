@@ -58,19 +58,25 @@ scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifie
 	}
 	else {
 		if (id == -1) {
-			if (member_variable_data[current_class].find(identifier) != member_variable_data[current_class].end()) {
+
+			if (member_variable_data.find(current_class) != member_variable_data.end()
+				&& member_variable_data[current_class].find(identifier) != member_variable_data[current_class].end()) {
 				return scope_class;
 			}
 			else {
 				std::string searcher = current_class;
-				while (parsed_class_data[searcher]->parent_type != "") {
-					searcher = parsed_class_data[searcher]->parent_type;
 
-					if (member_variable_data[searcher].find(identifier) != member_variable_data[searcher].end()) {
-						return scope_class;
+				if (parsed_class_data.find(searcher) != parsed_class_data.end()) {
+					while (parsed_class_data[searcher]->parent_type != "") {
+						searcher = parsed_class_data[searcher]->parent_type;
+
+						if (member_variable_data[searcher].find(identifier) != member_variable_data[searcher].end()) {
+							return scope_class;
+						}
 					}
 				}
 			}
+
 			if (global_variable_symbol.find(identifier) != global_variable_symbol.end()) {
 				return scope_global;
 			}
@@ -806,7 +812,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[i],
 					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[i] }
-				));
+			));
 		}
 
 		line += "{";
@@ -867,7 +873,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += " {\n";
