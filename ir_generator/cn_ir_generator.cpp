@@ -195,7 +195,8 @@ Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
 				std::unordered_map<std::string, Data> found_area = area->at(i);
 
 				for (area_iterator = found_area.begin(); area_iterator != found_area.end(); area_iterator++) {
-					return area_iterator->second;
+					if (area_iterator->first == identifier)
+						return area_iterator->second;
 				}
 			}
 		}

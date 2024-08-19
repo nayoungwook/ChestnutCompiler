@@ -1,8 +1,8 @@
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\error\sys_error.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_error.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ir_generator.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\logger\sys_logger.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_logger.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\main.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\main.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\parser\cn_ast.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_ast.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\parser\cn_parser.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_parser.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\sys_file.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\sys_file.obj
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\tokenizer\cn_tokenizer.cpp;C:\Users\user\source\repos\Chestnut\ChestnutCompiler\x64\Debug\cn_tokenizer.obj
+C:\workspace\ChsetnutCompiler\error\sys_error.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\sys_error.obj
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_ir_generator.obj
+C:\workspace\ChsetnutCompiler\logger\sys_logger.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\sys_logger.obj
+C:\workspace\ChsetnutCompiler\main.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\main.obj
+C:\workspace\ChsetnutCompiler\parser\cn_ast.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_ast.obj
+C:\workspace\ChsetnutCompiler\parser\cn_parser.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_parser.obj
+C:\workspace\ChsetnutCompiler\sys_file.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\sys_file.obj
+C:\workspace\ChsetnutCompiler\tokenizer\cn_tokenizer.cpp;C:\workspace\ChsetnutCompiler\x64\Debug\cn_tokenizer.obj
