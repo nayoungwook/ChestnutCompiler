@@ -25,11 +25,21 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("load_scene", 2));
 	builtin_function_symbol.insert(std::make_pair("image", 3));
 	builtin_function_symbol.insert(std::make_pair("background", 4));
+	builtin_function_symbol.insert(std::make_pair("random", 5));
+	builtin_function_symbol.insert(std::make_pair("sin", 6));
+	builtin_function_symbol.insert(std::make_pair("cos", 7));
+	builtin_function_symbol.insert(std::make_pair("tan", 8));
+	builtin_function_symbol.insert(std::make_pair("atan", 9));
+	builtin_function_symbol.insert(std::make_pair("abs", 10));
+	builtin_function_symbol.insert(std::make_pair("random_range", 11));
 }
 
 void declare_builtin_variables() {
-	Data data = { 0, "shader", false };
-	global_variable_symbol.insert(std::make_pair("default_shader", data));
+	Data shader_data = { 0, "shader", false };
+	global_variable_symbol.insert(std::make_pair("default_shader", shader_data));
+
+	Data mouse_data = { 1, "vector", false };
+	global_variable_symbol.insert(std::make_pair("mouse", mouse_data));
 }
 
 void create_scope() {
@@ -806,14 +816,13 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 		for (int i = 0; i < constructor_declaration_ast->parameters.size(); i++) {
-			VariableDeclarationAST* param = constructor_declaration_ast->parameters[i];
-
-			line += param->names[0] + " " + param->var_types[0] + " ";
+			line += constructor_declaration_ast->parameters[i]->names[0] + " ";
+			line += constructor_declaration_ast->parameters[i]->var_types[0] + " ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
-				std::make_pair(constructor_declaration_ast->parameters[i]->names[i],
-					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[i] }
-			));
+				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
+					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[0] }
+				));
 		}
 
 		line += "{";
@@ -1128,19 +1137,25 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_assign_ir(ast, indentation), 0);
 		}
 		else if (bin_expr_ast->oper == "++" || bin_expr_ast->oper == "--") {
+			
+			std::string rhs = create_ir(new NumberAST("1"), indentation);
+			append_data(result, rhs, 0);
+
 			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
 			append_data(result, lhs, 0);
 
 			std::string oper = "";
 
 			if (bin_expr_ast->oper == "++")
-				oper = "@INCRE";
+				oper = "@ADD";
 			else if (bin_expr_ast->oper == "--")
-				oper = "@DECRE";
+				oper = "@SUB";
 
 			oper += " " + std::to_string(ast->line_number);
-
 			append_data(result, oper, indentation);
+
+			bin_expr_ast->rhs = nullptr;
+			append_data(result, create_assign_ir(bin_expr_ast, indentation), indentation);
 		}
 		else if (bin_expr_ast->oper == ">" ||
 			bin_expr_ast->oper == "<" ||
