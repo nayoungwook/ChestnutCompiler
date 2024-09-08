@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="compiler.h" />
     <ClInclude Include="error\sys_error.h" />
     <ClInclude Include="ir_generator\cn_ir_generator.h" />
     <ClInclude Include="logger\sys_logger.h" />
@@ -137,6 +138,7 @@
     <ClInclude Include="tokenizer\cn_tokenizer.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="compiler.cpp" />
     <ClCompile Include="error\sys_error.cpp" />
     <ClCompile Include="ir_generator\cn_ir_generator.cpp" />
     <ClCompile Include="logger\sys_logger.cpp" />

@@ -46,6 +46,7 @@ inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> 
 
 // declare builtin
 void declare_builtin_functions();
+void declare_builtin_variables();
 
 void append_data(std::string& target, std::string content, int indentation);
 

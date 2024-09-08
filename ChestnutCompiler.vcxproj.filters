@@ -69,6 +69,9 @@
     <ClInclude Include="error\sys_error.h">
       <Filter>헤더 파일\error</Filter>
     </ClInclude>
+    <ClInclude Include="compiler.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -94,6 +97,9 @@
     </ClCompile>
     <ClCompile Include="error\sys_error.cpp">
       <Filter>소스 파일\error</Filter>
+    </ClCompile>
+    <ClCompile Include="compiler.cpp">
+      <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

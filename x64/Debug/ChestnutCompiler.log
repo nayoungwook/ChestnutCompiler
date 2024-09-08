@@ -1,20 +1,5 @@
-﻿  cn_ir_generator.cpp
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(467,15): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(617,29): warning C4267: '+=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(625,29): warning C4267: '+=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(639,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(654,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(665,13): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(689,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(701,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(721,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(1308,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267: '초기화 중': 'size_t'에서 '_Ty2'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         with
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         [
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:             _Ty2=unsigned int
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         ]
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(225,1): warning C4715: 'get_data_of_variable': 모든 제어 경로에서 값을 반환하지는 않습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(131,1): warning C4715: 'get_scope_of_function': 모든 제어 경로에서 값을 반환하지는 않습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(102,1): warning C4715: 'get_scope_of_identifier': 모든 제어 경로에서 값을 반환하지는 않습니다.
+﻿  compiler.cpp
+  main.cpp
+C:\Users\user\source\repos\Chestnut\ChestnutCompiler\main.cpp(14,14): warning C4101: 'e' :참조되지 않은 지역 변수입니다.
+  코드를 생성하고 있습니다...
   ChestnutCompiler.vcxproj -> C:\Users\user\source\repos\Chestnut\x64\Debug\ChestnutCompiler.exe

@@ -32,6 +32,7 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("atan", 9));
 	builtin_function_symbol.insert(std::make_pair("abs", 10));
 	builtin_function_symbol.insert(std::make_pair("random_range", 11));
+	builtin_function_symbol.insert(std::make_pair("sqrt", 12));
 }
 
 void declare_builtin_variables() {
@@ -675,6 +676,14 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	std::string result = "";
 
 	switch (ast->type) {
+
+	case import_ast: {
+		ImportAST* import_ast = (ImportAST*)ast;
+		append_data(result, "#IMPORT " + import_ast->import_type + " " + std::to_string(ast->line_number) + "\n", indentation);
+
+		break;
+	}
+
 	case load_ast: {
 		LoadAST* load_ast = (LoadAST*)ast;
 		append_data(result, "#LOAD " + load_ast->name + " " + load_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
@@ -883,7 +892,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
 		line += " {\n";
@@ -1137,7 +1146,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_assign_ir(ast, indentation), 0);
 		}
 		else if (bin_expr_ast->oper == "++" || bin_expr_ast->oper == "--") {
-			
+
 			std::string rhs = create_ir(new NumberAST("1"), indentation);
 			append_data(result, rhs, 0);
 

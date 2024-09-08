@@ -89,7 +89,7 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 
 		if (_cur_node->type == number_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
 			|| _cur_node->type == new_ast || _cur_node->type == character_ast || _cur_node->type == bool_ast || _cur_node->type == keyboard_ast
-			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast) {
+			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast) {
 			result.push_back(_cur_node);
 			continue;
 		}
@@ -925,6 +925,9 @@ ImportAST* create_import_ast(std::vector<Token*>& tokens) {
 	ImportAST* result = nullptr;
 
 	std::string import_name = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+	import_name = import_name.substr(1, import_name.size() - 2);
+
+	compile_imported_file(import_name);
 
 	result = new ImportAST(import_name);
 
