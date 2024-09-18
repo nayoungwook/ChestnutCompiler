@@ -62,6 +62,10 @@ int main(int argc, char* args[]) {
 
 			compile_imported_file(file_name);
 		}
+		else if (!strcmp("-help", args[1])) {
+			CHESTNUT_LOG(L"With no arguments, the process is on the \'debug mode\'", log_level::log_warn);
+
+		}
 	}
 
 	create_ir_files();

@@ -45,7 +45,6 @@ void write_file(std::string file_path, std::string content) {
 
 std::wstring get_current_directory() {
 	TCHAR buffer[MAX_PATH] = { 0 };
-	GetModuleFileName(NULL, buffer, MAX_PATH);
-	std::wstring::size_type pos = std::wstring(buffer).find_last_of(L"\\/");
-	return std::wstring(buffer).substr(0, pos);
+	GetCurrentDirectory(MAX_PATH, buffer);
+	return std::wstring(buffer);
 }

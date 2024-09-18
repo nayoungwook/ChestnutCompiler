@@ -33,6 +33,7 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair("abs", 10));
 	builtin_function_symbol.insert(std::make_pair("random_range", 11));
 	builtin_function_symbol.insert(std::make_pair("sqrt", 12));
+	builtin_function_symbol.insert(std::make_pair("text", 13));
 }
 
 void declare_builtin_variables() {
