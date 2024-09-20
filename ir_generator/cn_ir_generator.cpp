@@ -313,6 +313,10 @@ MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher) {
 		member_function.id = 2;
 		member_function.name = "remove";
 	}
+	else if (searcher->function_name == "set") {
+		member_function.id = 3;
+		member_function.name = "set";
+	}
 
 	return member_function;
 }
