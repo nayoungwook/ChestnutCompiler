@@ -1255,6 +1255,17 @@ LoadAST* create_load_ast(std::vector<Token*>& tokens) {
 	return result;
 }
 
+FontAST* create_font_ast(std::vector<Token*>& tokens) {
+	FontAST* result = nullptr;
+
+	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::string path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+
+	result = new FontAST(name, path);
+
+	return result;
+}
+
 BaseAST* parse(std::vector<Token*>& tokens) {
 	BaseAST* result = nullptr;
 	int token_size = 0;
@@ -1365,6 +1376,9 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 	}
 	else if (first_token->type == tok_load) {
 		result = create_load_ast(tokens);
+	}
+	else if (first_token->type == tok_font) {
+		result = create_font_ast(tokens);
 	}
 	else if (first_token->type == tok_l_bracket) {
 		result = create_array_declaration_ast(tokens);

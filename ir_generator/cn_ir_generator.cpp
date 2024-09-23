@@ -689,6 +689,13 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		break;
 	}
 
+	case font_ast: {
+		FontAST* font_ast = (FontAST*)ast;
+		append_data(result, "#FONT " + font_ast->name + " " + font_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
+
+		break;
+	}
+
 	case load_ast: {
 		LoadAST* load_ast = (LoadAST*)ast;
 		append_data(result, "#LOAD " + load_ast->name + " " + load_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
@@ -836,7 +843,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += "{";
@@ -897,7 +904,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += " {\n";

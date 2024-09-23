@@ -1,6 +1,141 @@
-FUNC 0 (main) void {
-    @PUSH_STRING "Hello, World!" 1
+#LOAD scout "scout.png" 1
 
-    @CALL_FUNCTION 0 (print) 1 1
+
+#LOAD troll "troll.png" 2
+
+
+#FONT godo "GodoB.ttf" 3
+
+
+SCENE 0 (Game) -1 {
+$INITIALIZE 0 (constructor) default void {
+    @PUSH_NUMBER 0 7
+
+    @PUSH_NUMBER 0 7
+
+@VECTOR 2 7
+
+@STORE_CLASS 0 (loc) 7
+
+@PUSH_NUMBER 0 8
+
+@STORE_CLASS 1 (t) 8
 
 }
+FUNC 0 (tick) public void  {
+    @PUSH_NUMBER 0.1 11
+
+    @LOAD_CLASS 1 (t) 0
+
+
+
+    @ADD 11
+    @STORE_CLASS 1 (t) 0
+
+}
+
+FUNC 1 (render) public void  {
+        @PUSH_NUMBER 50 15
+
+@LOAD_CLASS 1 (t) 15
+
+
+
+    @CALL_BUILTIN 7 (cos) 1 15
+
+@MUL 0
+
+        @PUSH_NUMBER 50 15
+
+@LOAD_CLASS 1 (t) 15
+
+
+
+    @CALL_BUILTIN 6 (sin) 1 15
+
+@MUL 0
+
+    @VECTOR 2 15
+@STORE_CLASS 0 (loc) 0
+
+    @PUSH_NUMBER 48 16
+
+    @LOAD_CLASS 0 (loc) 16
+
+
+
+    @PUSH_STRING "Test Test 123" 16
+
+    @PUSH_STRING "godo" 16
+
+    @CALL_BUILTIN 13 (text) 4 16
+
+    @PUSH_NUMBER 48 17
+
+        @PUSH_NUMBER 48 17
+
+    @PUSH_NUMBER 0 17
+
+@VECTOR 2 17
+
+@LOAD_CLASS 0 (loc) 17
+
+
+
+@ADD 0
+
+    @PUSH_STRING "Trololololol" 17
+
+    @PUSH_STRING "godo" 17
+
+    @CALL_BUILTIN 13 (text) 4 17
+
+    @PUSH_NUMBER 100 19
+
+    @PUSH_NUMBER 100 19
+
+        @PUSH_NUMBER 100 19
+
+    @PUSH_NUMBER 0 19
+
+@VECTOR 2 19
+
+@PUSH_NUMBER -1 0
+
+@MUL 0
+
+@LOAD_CLASS 0 (loc) 19
+
+
+
+@ADD 0
+
+    @PUSH_STRING "troll" 19
+
+    @CALL_BUILTIN 3 (image) 4 19
+
+}
+
+FUNC 2 (init) public void  {
+}
+
+$CONSTRUCTOR 0 (constructor) default void {
+}
+
+}
+
+FUNC 0 (main) default void  {
+    @NEW 0 (Game) 0 24
+
+    @CALL_BUILTIN 2 (load_scene) 1 24
+
+    @PUSH_NUMBER 720 25
+
+    @PUSH_NUMBER 1280 25
+
+    @PUSH_STRING "Chestnut test window!" 25
+
+    @CALL_BUILTIN 1 (window) 3 25
+
+}
+

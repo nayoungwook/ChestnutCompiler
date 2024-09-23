@@ -38,6 +38,7 @@ enum ast_type {
 	cast_ast = 27,
 	keyboard_ast = 28,
 	load_ast = 29,
+	font_ast = 30,
 };
 
 class BaseAST {
@@ -122,6 +123,15 @@ public:
 	std::string path, name;
 	LoadAST(std::string const& name, std::string const& path) : path(path), name(name) {
 		type = load_ast;
+	};
+};
+
+class FontAST : public BaseAST {
+private:
+public:
+	std::string path, name;
+	FontAST(std::string const& name, std::string const& path) : path(path), name(name) {
+		type = font_ast;
 	};
 };
 

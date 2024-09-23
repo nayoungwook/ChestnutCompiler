@@ -297,6 +297,8 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 					type = tok_import;
 				else if (identifier == "#load")
 					type = tok_load;
+				else if(identifier == "#font")
+					type = tok_font;
 			}
 
 		}
