@@ -1,11 +1,13 @@
 #include "main.h"
 
-std::vector<BaseAST*> compile_file(std::string const& file_name) {
+std::vector<BaseAST*> compile_file(std::wstring const& file_name) {
 
-	std::string cn_file_path = file_name + ".cn";
-	std::vector<std::string> _file = get_file(cn_file_path);
+	std::wstring cn_file_path = file_name + L".cn";
+	std::wstring w_file_name = std::wstring(cn_file_path.begin(), cn_file_path.end());
+	std::vector<std::wstring> _file = get_file(w_file_name);
 
 	std::vector<Token*> tokens;
+
 	for (int i = 0; i < _file.size(); i++) {
 		std::vector<Token*> lines;
 		try {
@@ -24,7 +26,7 @@ std::vector<BaseAST*> compile_file(std::string const& file_name) {
 
 	std::vector<BaseAST*> parsed_asts;
 
-	std::string result = "";
+	std::wstring result = L"";
 	while (!tokens.empty()) {
 		if (tokens.size() == 0) continue;
 
@@ -36,11 +38,11 @@ std::vector<BaseAST*> compile_file(std::string const& file_name) {
 	return parsed_asts;
 }
 
-std::string create_ir(std::vector<BaseAST*>& parsed_asts) {
-	std::string result;
+std::wstring create_ir(std::vector<BaseAST*>& parsed_asts) {
+	std::wstring result;
 
 	for (BaseAST* ast : parsed_asts)
-		result += create_ir(ast, 0) + "\n";
+		result += create_ir(ast, 0) + L"\n";
 
 	return result;
 }
@@ -54,13 +56,13 @@ int main(int argc, char* args[]) {
 		CHESTNUT_LOG(L"With no arguments, the process is on the \'debug mode\'", log_level::log_warn);
 		CHESTNUT_LOG(L"If it was not your intention, please type \'chestnut -help.\' to get help.", log_level::log_warn);
 
-		compile_imported_file("main");
+		compile_imported_file(L"main");
 	}
 	else if (argc == 3) {
 		if (!strcmp("-compile", args[1])) {
 			std::string file_name = args[2];
 
-			compile_imported_file(file_name);
+			compile_imported_file(std::wstring(file_name.begin(), file_name.end()));
 		}
 		else if (!strcmp("-help", args[1])) {
 			CHESTNUT_LOG(L"With no arguments, the process is on the \'debug mode\'", log_level::log_warn);

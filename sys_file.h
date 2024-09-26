@@ -1,7 +1,6 @@
 #pragma once
 
 #include <iostream>
-#include <string>
 #include <vector>
 #include <fstream>
 #include <ostream>
@@ -11,6 +10,6 @@
 #include "logger/sys_logger.h"
 #include "error/sys_error.h"
 
-std::vector<std::string> get_file(std::string& file_path);
-void write_file(std::string file_path, std::string content);
+std::vector<std::wstring> get_file(std::wstring& file_path);
+void write_file(std::wstring file_path, std::wstring content);
 std::wstring get_current_directory();

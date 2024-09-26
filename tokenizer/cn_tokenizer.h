@@ -8,9 +8,10 @@
 
 #include "cn_token.h"
 
-static char cur_char = ' ', next_char = ' ';
+static wchar_t cur_char = L' ', next_char = L' ';
 
-char get_char(std::string& line, int& _i, int line_number);
+wchar_t get_char(std::wstring& line, int& _i, int line_number);
+bool is_special_characters(const wchar_t& wc);
 
-std::vector<Token*> tokenize(std::string line, int line_number);
-std::string  get_number_literal(std::string& identifier, std::string& line, int& i, int line_number);
+std::vector<Token*> tokenize(std::wstring line, int line_number);
+std::wstring get_number_literal(std::wstring& identifier, std::wstring& line, int& i, int line_number);

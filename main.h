@@ -11,5 +11,5 @@
 #include "ir_generator/cn_ir_generator.h"
 #include "compiler.h"
 
-std::vector<BaseAST*> compile_file(std::string const& file_name);
-std::string create_ir(std::vector<BaseAST*>& parsed_asts);
+std::vector<BaseAST*> compile_file(std::wstring const& file_name);
+std::wstring create_ir(std::vector<BaseAST*>& parsed_asts);

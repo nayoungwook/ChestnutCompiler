@@ -7,5 +7,5 @@
 #include "main.h"
 #include "compiler.h"
 
-void compile_imported_file(std::string const& import_name);
+void compile_imported_file(std::wstring const& import_name);
 void create_ir_files();

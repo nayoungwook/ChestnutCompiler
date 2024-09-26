@@ -54,9 +54,9 @@ public:
 class NumberAST : public BaseAST {
 private:
 public:
-	std::string number_string = "0";
+	std::wstring number_string = L"0";
 
-	NumberAST(const std::string& number) : number_string(number) {
+	NumberAST(const std::wstring& number) : number_string(number) {
 		type = number_ast;
 	}
 };
@@ -75,8 +75,8 @@ public:
 class IdentifierAST : public BaseAST {
 private:
 public:
-	std::string identifier; // TODO : maybe do some type check later.
-	IdentifierAST(const std::string& identifier) : identifier(identifier) {
+	std::wstring identifier; // TODO : maybe do some type check later.
+	IdentifierAST(const std::wstring& identifier) : identifier(identifier) {
 		type = identifier_ast;
 	}
 };
@@ -84,8 +84,8 @@ public:
 class StringLiteralAST : public BaseAST {
 private:
 public:
-	std::string str_literal; // TODO : maybe do some type check later.
-	StringLiteralAST(const std::string& str_literal) : str_literal(str_literal) {
+	std::wstring str_literal; // TODO : maybe do some type check later.
+	StringLiteralAST(const std::wstring& str_literal) : str_literal(str_literal) {
 		type = string_literal_ast;
 	}
 };
@@ -111,8 +111,8 @@ public:
 class ImportAST : public BaseAST {
 private:
 public:
-	std::string import_type;
-	ImportAST(const std::string& import_type) : import_type(import_type) {
+	std::wstring import_type;
+	ImportAST(const std::wstring& import_type) : import_type(import_type) {
 		type = import_ast;
 	};
 };
@@ -120,8 +120,8 @@ public:
 class LoadAST : public BaseAST {
 private:
 public:
-	std::string path, name;
-	LoadAST(std::string const& name, std::string const& path) : path(path), name(name) {
+	std::wstring path, name;
+	LoadAST(std::wstring const& name, std::wstring const& path) : path(path), name(name) {
 		type = load_ast;
 	};
 };
@@ -129,8 +129,8 @@ public:
 class FontAST : public BaseAST {
 private:
 public:
-	std::string path, name;
-	FontAST(std::string const& name, std::string const& path) : path(path), name(name) {
+	std::wstring path, name;
+	FontAST(std::wstring const& name, std::wstring const& path) : path(path), name(name) {
 		type = font_ast;
 	};
 };
@@ -139,13 +139,13 @@ class VariableDeclarationAST : public BaseAST {
 private:
 public:
 	bool is_static = false;
-	std::string access_modifier = "default";
-	std::vector<std::string> var_types, names, array_var_types;
+	std::wstring access_modifier = L"default";
+	std::vector<std::wstring> var_types, names, array_var_types;
 	std::vector<BaseAST*> declarations;
 	size_t var_count;
 
-	VariableDeclarationAST(std::vector<std::string>& var_types, std::vector<std::string>& names,
-		std::vector<BaseAST*>& declarations, std::vector<std::string>& array_var_types, size_t var_count) : var_types(var_types), names(names), declarations(declarations), var_count(var_count), array_var_types(array_var_types) {
+	VariableDeclarationAST(std::vector<std::wstring>& var_types, std::vector<std::wstring>& names,
+		std::vector<BaseAST*>& declarations, std::vector<std::wstring>& array_var_types, size_t var_count) : var_types(var_types), names(names), declarations(declarations), var_count(var_count), array_var_types(array_var_types) {
 		type = variable_declaration_ast;
 	}
 };
@@ -154,12 +154,12 @@ class FunctionDeclarationAST : public BaseAST {
 private:
 public:
 	bool is_static = false;
-	std::string return_type, function_name, access_modifier = "default", array_return_type = "";
+	std::wstring return_type, function_name, access_modifier = L"default", array_return_type = L"";
 	std::vector<VariableDeclarationAST*> parameters;
 	std::vector<BaseAST*> body;
 
-	FunctionDeclarationAST(const std::string& function_name, std::vector<VariableDeclarationAST*>& parameter, const std::string& return_type,
-		std::string const& array_return_type)
+	FunctionDeclarationAST(const std::wstring& function_name, std::vector<VariableDeclarationAST*>& parameter, const std::wstring& return_type,
+		std::wstring const& array_return_type)
 		: function_name(function_name), return_type(return_type), array_return_type(array_return_type) {
 		this->parameters = parameter;
 
@@ -171,7 +171,7 @@ class ConstructorDeclarationAST : public FunctionDeclarationAST {
 private:
 public:
 	ConstructorDeclarationAST(std::vector<VariableDeclarationAST*>& parameter)
-		: FunctionDeclarationAST("constructor", parameter, "void", "") {
+		: FunctionDeclarationAST(L"constructor", parameter, L"void", L"") {
 		this->parameters = parameter;
 
 		type = constructor_declaration_ast;
@@ -181,9 +181,9 @@ public:
 class FunctionCallAST : public BaseAST {
 private:
 public:
-	std::string function_name;
+	std::wstring function_name;
 	std::vector<BaseAST*> parameters;
-	FunctionCallAST(const std::string& function_name, std::vector<BaseAST*>& parameters)
+	FunctionCallAST(const std::wstring& function_name, std::vector<BaseAST*>& parameters)
 		: function_name(function_name) {
 		this->parameters = parameters;
 
@@ -247,10 +247,10 @@ public:
 class BinExprAST : public BaseAST {
 private:
 public:
-	std::string oper;
+	std::wstring oper;
 	BaseAST* lhs = nullptr, * rhs = nullptr;
 
-	BinExprAST(std::string const& oper, BaseAST* lhs, BaseAST* rhs)
+	BinExprAST(std::wstring const& oper, BaseAST* lhs, BaseAST* rhs)
 		: oper(oper), lhs(lhs), rhs(rhs) {
 		type = bin_expr_ast;
 	}
@@ -259,9 +259,9 @@ public:
 class OperatorAST : public BaseAST {
 private:
 public:
-	std::string oper;
+	std::wstring oper;
 
-	OperatorAST(std::string const& oper) : oper(oper) {
+	OperatorAST(std::wstring const& oper) : oper(oper) {
 		type = operator_ast;
 	}
 };
@@ -269,9 +269,9 @@ public:
 class ParenAST : public BaseAST {
 private:
 public:
-	std::string paren;
+	std::wstring paren;
 
-	ParenAST(std::string const& paren) : paren(paren) {
+	ParenAST(std::wstring const& paren) : paren(paren) {
 		type = paren_ast;
 	}
 };
@@ -279,13 +279,13 @@ public:
 class ClassAST : public BaseAST {
 private:
 public:
-	std::string name;
+	std::wstring name;
 	std::vector<BaseAST*> functions;
 	std::vector<BaseAST*> variables;
-	std::string parent_type = "";
+	std::wstring parent_type = L"";
 	std::vector<ConstructorDeclarationAST*> constructor;
 
-	ClassAST(std::string& name, std::string& parent_type) : name(name), parent_type(parent_type) {
+	ClassAST(std::wstring& name, std::wstring& parent_type) : name(name), parent_type(parent_type) {
 		type = class_ast;
 	}
 };
@@ -293,7 +293,7 @@ public:
 class SceneAST : public ClassAST {
 private:
 public:
-	SceneAST(std::string& name, std::string& parent_type) : ClassAST(name, parent_type) {
+	SceneAST(std::wstring& name, std::wstring& parent_type) : ClassAST(name, parent_type) {
 		type = scene_ast;
 	}
 };
@@ -301,7 +301,7 @@ public:
 class ObjectAST : public ClassAST {
 private:
 public:
-	ObjectAST(std::string& name, std::string& parent_type) : ClassAST(name, parent_type) {
+	ObjectAST(std::wstring& name, std::wstring& parent_type) : ClassAST(name, parent_type) {
 		type = object_ast;
 	}
 };
@@ -309,10 +309,10 @@ public:
 class NewAST : public BaseAST {
 private:
 public:
-	std::string class_name;
+	std::wstring class_name;
 	std::vector<BaseAST*> parameters;
 
-	NewAST(std::string& class_name) : class_name(class_name) {
+	NewAST(std::wstring& class_name) : class_name(class_name) {
 		type = new_ast;
 	}
 };
@@ -322,7 +322,7 @@ private:
 public:
 	std::vector<BaseAST*> indexes;
 
-	ArrayReferAST(std::string& identifier, std::vector<BaseAST*>& indexes) : IdentifierAST(identifier), indexes(indexes) {
+	ArrayReferAST(std::wstring& identifier, std::vector<BaseAST*>& indexes) : IdentifierAST(identifier), indexes(indexes) {
 		type = array_refer_ast;
 	}
 };
@@ -362,9 +362,9 @@ class CastAST : public BaseAST {
 private:
 public:
 	BaseAST* target_ast;
-	std::string cast_type = "";
+	std::wstring cast_type = L"";
 
-	CastAST(std::string& cast_type, BaseAST* target_ast) : cast_type(cast_type), target_ast(target_ast) {
+	CastAST(std::wstring& cast_type, BaseAST* target_ast) : cast_type(cast_type), target_ast(target_ast) {
 		type = cast_ast;
 	}
 };
@@ -372,9 +372,9 @@ public:
 class KeyboardAST : public BaseAST {
 private:
 public:
-	std::string pressed_key = "";
+	std::wstring pressed_key = L"";
 
-	KeyboardAST(std::string& pressed_key) : pressed_key(pressed_key) {
+	KeyboardAST(std::wstring& pressed_key) : pressed_key(pressed_key) {
 		type = keyboard_ast;
 	}
 };

@@ -135,11 +135,11 @@ class Token
 {
 public:
 	int type = 0;
-	std::string identifier = 0;
+	std::wstring identifier = 0;
 	int line = 0;
 
 	~Token() = default;
 
-	Token(int type, std::string identifier, int line_number)
+	Token(int type, std::wstring identifier, int line_number)
 		: type(type), identifier(identifier), line(line_number) {}
 };

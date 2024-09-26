@@ -1,10 +1,10 @@
 #include "cn_parser.h"
 
-extern std::unordered_map<std::string, ClassAST*> parsed_class_data;
-extern std::unordered_map<std::string, FunctionDeclarationAST*> parsed_function_data;
-extern std::unordered_map<std::string, unsigned int> class_id;
-extern std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
-extern std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
+extern std::unordered_map<std::wstring, ClassAST*> parsed_class_data;
+extern std::unordered_map<std::wstring, FunctionDeclarationAST*> parsed_function_data;
+extern std::unordered_map<std::wstring, unsigned int> class_id;
+extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberFunctionData>> member_function_data;
+extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberVariableData>> member_variable_data;
 
 std::vector<Token*> get_parameter_tokens(std::vector<Token*>& tokens) {
 
@@ -65,16 +65,16 @@ static bool is_logic(const Token* token) {
 int get_nodes_priority(const BaseAST* node) {
 	if (node->type == operator_ast) {
 		OperatorAST* _oper_node = (OperatorAST*)node;
-		if (_oper_node->oper == "+" || _oper_node->oper == "-")
+		if (_oper_node->oper == L"+" || _oper_node->oper == L"-")
 			return 1;
-		if (_oper_node->oper == "*" || _oper_node->oper == "/" ||
-			_oper_node->oper == "^" || _oper_node->oper == "%")
+		if (_oper_node->oper == L"*" || _oper_node->oper == L"/" ||
+			_oper_node->oper == L"^" || _oper_node->oper == L"%")
 			return 2;
-		if (_oper_node->oper == "==" || _oper_node->oper == "!=" ||
-			_oper_node->oper == "<=" || _oper_node->oper == ">=" ||
-			_oper_node->oper == "<" || _oper_node->oper == ">")
+		if (_oper_node->oper == L"==" || _oper_node->oper == L"!=" ||
+			_oper_node->oper == L"<=" || _oper_node->oper == L">=" ||
+			_oper_node->oper == L"<" || _oper_node->oper == L">")
 			return 0;
-		if (_oper_node->oper == "||" || _oper_node->oper == "&&")
+		if (_oper_node->oper == L"||" || _oper_node->oper == L"&&")
 			return -1;
 	}
 	return -2;
@@ -94,13 +94,13 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 			continue;
 		}
 
-		if (stk.empty() || (_cur_node->type == paren_ast && (dynamic_cast<ParenAST*>(_cur_node))->paren == "(")) {
+		if (stk.empty() || (_cur_node->type == paren_ast && (dynamic_cast<ParenAST*>(_cur_node))->paren == L"(")) {
 			stk.push(_cur_node);
 			continue;
 		}
 
-		if (_cur_node->type == paren_ast && (dynamic_cast<ParenAST*>(_cur_node))->paren == ")") {
-			while (!(stk.top()->type == paren_ast && dynamic_cast<ParenAST*>(stk.top())->paren == "(")) {
+		if (_cur_node->type == paren_ast && (dynamic_cast<ParenAST*>(_cur_node))->paren == L")") {
+			while (!(stk.top()->type == paren_ast && dynamic_cast<ParenAST*>(stk.top())->paren == L"(")) {
 				result.push_back(stk.top());
 				stk.pop();
 			}
@@ -134,20 +134,20 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 	// for neg (-) sign
 	for (int i = 0; i < nodes.size(); i++) {
 		if (nodes[i]->type == operator_ast) {
-			if (dynamic_cast<OperatorAST*>(nodes[i])->oper == "-") {
+			if (dynamic_cast<OperatorAST*>(nodes[i])->oper == L"-") {
 				if (nodes[i + 1]->type == paren_ast) {
-					modified_nodes.push_back(new NumberAST("-1"));
-					modified_nodes.push_back(new OperatorAST("*"));
+					modified_nodes.push_back(new NumberAST(L"-1"));
+					modified_nodes.push_back(new OperatorAST(L"*"));
 				}
 				else {
 					if (i != 0 && !(nodes[i - 1]->type == operator_ast || nodes[i - 1]->type == paren_ast)) {
-						modified_nodes.push_back(new OperatorAST("+"));
+						modified_nodes.push_back(new OperatorAST(L"+"));
 					}
-					modified_nodes.push_back(new ParenAST("("));
-					modified_nodes.push_back(new NumberAST("-1"));
-					modified_nodes.push_back(new OperatorAST("*"));
+					modified_nodes.push_back(new ParenAST(L"("));
+					modified_nodes.push_back(new NumberAST(L"-1"));
+					modified_nodes.push_back(new OperatorAST(L"*"));
 					modified_nodes.push_back(nodes[i + 1]);
-					modified_nodes.push_back(new ParenAST(")"));
+					modified_nodes.push_back(new ParenAST(L")"));
 					i++;
 				}
 				continue;
@@ -279,7 +279,7 @@ std::vector<Token*> get_block_tokens(std::vector<Token*>& tokens) {
 
 Token* check_token(std::vector<Token*>& tokens) {
 	if (tokens.size() == 0) {
-		return new Token(tok_null, "", 0);
+		return new Token(tok_null, L"", 0);
 	}
 	Token* pull = tokens.front();
 
@@ -297,21 +297,25 @@ Token* pull_token_and_expect(std::vector<Token*>& tokens, int token_type) { // i
 		std::wstring w_expected_token;
 		w_expected_token.assign(token_string[token_type].begin(), token_string[token_type].end());
 
+		std::wstring w_pulled_type;
+		w_pulled_type.assign(token_string[pull->type].begin(), token_string[pull->type].end());
+
 		std::wstring w_pulled_token;
 		w_pulled_token.assign(pull->identifier.begin(), pull->identifier.end());
 
-		CHESTNUT_THROW_ERROR(L"Unexpected syntax error, expected : " + w_expected_token + L" but pulled : " + w_pulled_token, "UNEXPECTED_TOKEN", "009", pull->line);
+		CHESTNUT_THROW_ERROR(L"Unexpected syntax error, expected : " + w_expected_token + L" but pulled : " + w_pulled_token + L" is type " + w_pulled_type
+			, "UNEXPECTED_TOKEN", "009", pull->line);
 	}
 
 	return pull;
 }
 
-BaseAST* get_null_delcaration_ast(const std::string& type) {
-	if (type == "number")
-		return new NumberAST("0");
-	else if (type == "bool")
+BaseAST* get_null_delcaration_ast(const std::wstring& type) {
+	if (type == L"number")
+		return new NumberAST(L"0");
+	else if (type == L"bool")
 		return new BoolAST(true);
-	else if (type == "array") {
+	else if (type == L"array") {
 		std::vector<BaseAST*> content;
 
 		return new ArrayDeclarationAST(content);
@@ -322,9 +326,9 @@ BaseAST* get_null_delcaration_ast(const std::string& type) {
 
 VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tokens) {
 	Token* tok = nullptr;
-	std::vector<std::string> names;
-	std::vector<std::string> types;
-	std::vector<std::string> array_var_types;
+	std::vector<std::wstring> names;
+	std::vector<std::wstring> types;
+	std::vector<std::wstring> array_var_types;
 	std::vector<size_t> array_sizes;
 	std::vector<BaseAST*> declarations;
 
@@ -332,7 +336,7 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 		tok = pull_token_and_expect(tokens, tok_identifier);
 		names.push_back(tok->identifier);
 
-		std::string array_var_type = "";
+		std::wstring array_var_type = L"";
 
 		tok = pull_token_and_expect(tokens, tok_colon);
 
@@ -342,7 +346,7 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 
 		array_sizes.push_back(size);
 
-		std::string type = tok->identifier;
+		std::wstring type = tok->identifier;
 		types.push_back(type);
 
 		if (tok->type == tok_array) {
@@ -415,7 +419,7 @@ VariableDeclarationAST* create_variable_declaration_ast(std::vector<Token*>& tok
 }
 
 BinExprAST* create_assign_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
-	std::string oper = pull_token_and_expect(tokens, -1)->identifier;
+	std::wstring oper = pull_token_and_expect(tokens, -1)->identifier;
 	std::vector<Token*> rhs_tokens;
 
 	Token* tok = pull_token_and_expect(tokens, -1);
@@ -438,7 +442,7 @@ BinExprAST* create_assign_ast(std::vector<Token*>& tokens, IdentifierAST* target
 }
 
 FunctionCallAST* create_function_call_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
-	std::string name = target->identifier;
+	std::wstring name = target->identifier;
 
 	std::vector<std::vector<Token*>> parameter_tokens = get_function_parameter_tokens(tokens);
 	std::vector<std::vector<BaseAST*>> parameter_asts;
@@ -467,7 +471,7 @@ FunctionCallAST* create_function_call_ast(std::vector<Token*>& tokens, Identifie
 
 BaseAST* create_increase_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
 	pull_token_and_expect(tokens, tok_incre);
-	BinExprAST* result = new BinExprAST("++", target, nullptr);
+	BinExprAST* result = new BinExprAST(L"++", target, nullptr);
 
 	if (tokens.size() != 0) {
 		if (check_token(tokens)->type == tok_semi_colon)
@@ -480,7 +484,7 @@ BaseAST* create_increase_identifier_ast(std::vector<Token*>& tokens, IdentifierA
 BaseAST* create_decrease_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
 
 	pull_token_and_expect(tokens, tok_decre);
-	BinExprAST* result = new BinExprAST("--", target, nullptr);
+	BinExprAST* result = new BinExprAST(L"--", target, nullptr);
 
 	if (tokens.size() != 0) {
 		if (check_token(tokens)->type == tok_semi_colon)
@@ -534,7 +538,7 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 	bool _is_incre = tokens.size() != 0 && check_token(tokens)->type == tok_incre;
 	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
 	bool _is_array_reference = tokens.size() != 0 && check_token(tokens)->type == tok_l_sq_bracket;
-	bool _is_kb = target->identifier == "key";
+	bool _is_kb = target->identifier == L"key";
 
 	if (_is_assign)
 		return create_assign_ast(tokens, target);
@@ -558,20 +562,20 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 
 FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tokens) {
 	FunctionDeclarationAST* ast = nullptr;
-	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 
 	std::vector<std::vector<Token*>> parameter_tokens = get_function_parameter_tokens(tokens);
 	std::vector<VariableDeclarationAST*> parameters;
 
 	for (int i = 0; i < parameter_tokens.size(); i++) {
-		std::string _type = parameter_tokens[i][2]->identifier;
-		std::string _name = parameter_tokens[i][0]->identifier;
+		std::wstring _type = parameter_tokens[i][2]->identifier;
+		std::wstring _name = parameter_tokens[i][0]->identifier;
 
-		std::vector<std::string> types = { _type };
-		std::vector<std::string> _array_types;
-		std::vector<std::string> name = { _name };
+		std::vector<std::wstring> types = { _type };
+		std::vector<std::wstring> _array_types;
+		std::vector<std::wstring> name = { _name };
 
-		if (_type == "array") {
+		if (_type == L"array") {
 			if (parameter_tokens[i].size() > 2)
 				_array_types.push_back(parameter_tokens[i][4]->identifier);
 			else {
@@ -587,11 +591,11 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	}
 
 	pull_token_and_expect(tokens, tok_colon);
-	std::string return_type = pull_token_and_expect(tokens, -1)->identifier;
+	std::wstring return_type = pull_token_and_expect(tokens, -1)->identifier;
 
-	std::string array_var_type = "";
+	std::wstring array_var_type = L"";
 
-	if (return_type == "array") {
+	if (return_type == L"array") {
 		pull_token_and_expect(tokens, tok_greater);
 
 		array_var_type = pull_token_and_expect(tokens, -1)->identifier;
@@ -614,20 +618,20 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	return ast;
 }
 
-void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::string, MemberVariableData>& member_variables) {
+void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::wstring, MemberVariableData>& member_variables) {
 	for (int i = 0; i < class_ast->variables.size(); i++) {
 		VariableDeclarationAST* ast = (VariableDeclarationAST*)class_ast->variables[i];
 
 		for (int j = 0; j < ast->var_count; j++) {
 			MemberVariableData data;
 
-			std::string name = ast->names[j];
+			std::wstring name = ast->names[j];
 
 			data.name = name;
 			data.access_modifier = ast->access_modifier;
 			data.id = member_variables.size();
 
-			if (ast->var_types[j] != "array") {
+			if (ast->var_types[j] != L"array") {
 				data.type = ast->var_types[j];
 			}
 			else {
@@ -641,12 +645,12 @@ void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::st
 }
 
 void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_asts) {
-	std::unordered_map<std::string, MemberFunctionData> member_functions;
+	std::unordered_map<std::wstring, MemberFunctionData> member_functions;
 	for (int i = 0; i < function_asts.size(); i++) {
 		FunctionDeclarationAST* ast = (FunctionDeclarationAST*)function_asts[i];
 
 		MemberFunctionData data;
-		std::string name = ast->function_name;
+		std::wstring name = ast->function_name;
 
 		data.access_modifier = ast->access_modifier;
 		data.name = name;
@@ -657,15 +661,15 @@ void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_ast
 
 	member_function_data.insert(std::make_pair(class_ast->name, member_functions));
 
-	std::unordered_map<std::string, MemberVariableData> member_variables;
+	std::unordered_map<std::wstring, MemberVariableData> member_variables;
 	assign_member_variable_data(class_ast, member_variables);
 	member_variable_data.insert(std::make_pair(class_ast->name, member_variables));
 }
 
 ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
-	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 
-	std::string parent_type = "";
+	std::wstring parent_type = L"";
 	if (check_token(tokens)->type == tok_extends) {
 		pull_token_and_expect(tokens, tok_extends);
 		parent_type = pull_token_and_expect(tokens, tok_identifier)->identifier;
@@ -708,9 +712,9 @@ ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {
 
 ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
-	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 
-	std::string parent_type = "";
+	std::wstring parent_type = L"";
 	if (check_token(tokens)->type == tok_extends) {
 		pull_token_and_expect(tokens, tok_extends);
 		parent_type = pull_token_and_expect(tokens, tok_identifier)->identifier;
@@ -720,27 +724,27 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 	std::vector<BaseAST*> function_asts;
 	std::vector<BaseAST*> variable_asts;
-	std::set<std::string> declarated;
+	std::set<std::wstring> declarated;
 
 	ObjectAST* ast = new ObjectAST(name, parent_type);
 
-	std::vector<std::string> _type = { "vector", "number", "number", "number", "texture" };
-	std::vector<std::string> _name = { "position", "width", "height", "rotation", "sprite" };
-	std::vector<std::string> _var_types = { "", "", "", "", "" };
-	std::vector<BaseAST*> vector_decl = { new NumberAST("0"), new NumberAST("0") };
+	std::vector<std::wstring> _type = { L"vector", L"number", L"number", L"number", L"texture" };
+	std::vector<std::wstring> _name = { L"position", L"width", L"height", L"rotation", L"sprite" };
+	std::vector<std::wstring> _var_types = { L"", L"", L"", L"", L"" };
+	std::vector<BaseAST*> vector_decl = { new NumberAST(L"0"), new NumberAST(L"0") };
 
-	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST("100") , new NumberAST("100"), new NumberAST("0"), new IdentifierAST("null") };
+	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST(L"100") , new NumberAST(L"100"), new NumberAST(L"0"), new IdentifierAST(L"null") };
 
 	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _var_types, _decl.size());
-	_builtin_decl->access_modifier = "public";
+	_builtin_decl->access_modifier = L"public";
 
 	variable_asts.push_back(_builtin_decl);
 
-	std::map<std::string, bool> functions_satisfied =
+	std::map<std::wstring, bool> functions_satisfied =
 	{
-		std::make_pair("init", false),
-		std::make_pair("tick", false),
-		std::make_pair("render", false),
+		std::make_pair(L"init", false),
+		std::make_pair(L"tick", false),
+		std::make_pair(L"render", false),
 	};
 
 	while (!body_tokens.empty()) {
@@ -751,12 +755,12 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 		if (_ast->type == function_declaration_ast) {
 			function_asts.push_back(_ast);
 
-			if (((FunctionDeclarationAST*)_ast)->access_modifier == "public") {
+			if (((FunctionDeclarationAST*)_ast)->access_modifier == L"public") {
 				if (!((FunctionDeclarationAST*)_ast)->is_static) {
 					if (
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "init" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "tick" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "render"
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"init" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"tick" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"render"
 						) {
 						functions_satisfied[dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name] = true;
 					}
@@ -775,11 +779,11 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 		ast->constructor.push_back(new ConstructorDeclarationAST(parameters));
 	}
 
-	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
+	for (std::pair<std::wstring, bool> satisfied : functions_satisfied) {
 		if (!satisfied.second) {
 			std::vector<VariableDeclarationAST*> parameters;
-			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void", "");
-			function_declaration_ast->access_modifier = "public";
+			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, L"void", L"");
+			function_declaration_ast->access_modifier = L"public";
 			function_asts.push_back(function_declaration_ast);
 		}
 	}
@@ -798,9 +802,9 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 
 SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 
-	std::string name = pull_token_and_expect(tokens, -1)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, -1)->identifier;
 
-	std::string parent_type = "";
+	std::wstring parent_type = L"";
 	if (check_token(tokens)->type == tok_extends) {
 		pull_token_and_expect(tokens, tok_extends);
 		parent_type = pull_token_and_expect(tokens, tok_identifier)->identifier;
@@ -812,11 +816,11 @@ SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 	std::vector<BaseAST*> variable_asts;
 
 	SceneAST* ast = new SceneAST(name, parent_type);
-	std::map<std::string, bool> functions_satisfied =
+	std::map<std::wstring, bool> functions_satisfied =
 	{
-		std::make_pair("init", false),
-		std::make_pair("tick", false),
-		std::make_pair("render", false),
+		std::make_pair(L"init", false),
+		std::make_pair(L"tick", false),
+		std::make_pair(L"render", false),
 	};
 
 	while (!body_tokens.empty()) {
@@ -827,12 +831,12 @@ SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 		if (_ast->type == function_declaration_ast) {
 			function_asts.push_back(_ast);
 
-			if (((FunctionDeclarationAST*)_ast)->access_modifier == "public") {
+			if (((FunctionDeclarationAST*)_ast)->access_modifier == L"public") {
 				if (!((FunctionDeclarationAST*)_ast)->is_static) {
 					if (
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "init" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "tick" ||
-						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == "render"
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"init" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"tick" ||
+						dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name == L"render"
 						) {
 						functions_satisfied[dynamic_cast<FunctionDeclarationAST*>(_ast)->function_name] = true;
 					}
@@ -848,11 +852,11 @@ SceneAST* create_scene_declaration_ast(std::vector<Token*>& tokens) {
 		ast->constructor.push_back(new ConstructorDeclarationAST(parameters));
 	}
 
-	for (std::pair<std::string, bool> satisfied : functions_satisfied) {
+	for (std::pair<std::wstring, bool> satisfied : functions_satisfied) {
 		if (!satisfied.second) {
 			std::vector<VariableDeclarationAST*> parameters;
-			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, "void", "");
-			function_declaration_ast->access_modifier = "public";
+			FunctionDeclarationAST* function_declaration_ast = new FunctionDeclarationAST(satisfied.first, parameters, L"void", L"");
+			function_declaration_ast->access_modifier = L"public";
 			function_asts.push_back(function_declaration_ast);
 		}
 	}
@@ -896,7 +900,7 @@ ReturnAST* create_return_ast(std::vector<Token*>& tokens) {
 NewAST* create_new_ast(std::vector<Token*>& tokens) {
 	NewAST* result = nullptr;
 
-	std::string class_name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring class_name = pull_token_and_expect(tokens, tok_identifier)->identifier;
 
 	std::vector<std::vector<Token*>> parameter_tokens = get_function_parameter_tokens(tokens);
 	std::vector<std::vector<BaseAST*>> parameter_asts;
@@ -924,7 +928,7 @@ NewAST* create_new_ast(std::vector<Token*>& tokens) {
 ImportAST* create_import_ast(std::vector<Token*>& tokens) {
 	ImportAST* result = nullptr;
 
-	std::string import_name = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+	std::wstring import_name = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
 	import_name = import_name.substr(1, import_name.size() - 2);
 
 	compile_imported_file(import_name);
@@ -1008,8 +1012,8 @@ ForStatementAST* create_for_statement_ast(std::vector<Token*>& tokens) {
 		separated_tokens[seprate_index].push_back(tok);
 	}
 
-	separated_tokens[0].push_back(new Token(tok_semi_colon, ";", 0));
-	separated_tokens[2].push_back(new Token(tok_semi_colon, ";", 0));
+	separated_tokens[0].push_back(new Token(tok_semi_colon, L";", 0));
+	separated_tokens[2].push_back(new Token(tok_semi_colon, L";", 0));
 
 	std::vector<BaseAST*> condition_asts;
 
@@ -1114,17 +1118,18 @@ ConstructorDeclarationAST* create_constructor_declaration_ast(std::vector<Token*
 	std::vector<VariableDeclarationAST*> parameters;
 
 	for (int i = 0; i < parameter_tokens.size(); i++) {
-		std::string _type = parameter_tokens[i][2]->identifier;
-		std::string _name = parameter_tokens[i][0]->identifier;
+		std::wstring _type = parameter_tokens[i][2]->identifier;
+		std::wstring _name = parameter_tokens[i][0]->identifier;
 
-		std::vector<std::string> types = { _type };
-		std::vector<std::string> _array_types;
-		std::vector<std::string> name = { _name };
+		std::vector<std::wstring> types = { _type };
+		std::vector<std::wstring> _array_types;
+		std::vector<std::wstring> name = { _name };
 
-		if (_type == "array") {
+		if (_type == L"array") {
 			if (parameter_tokens[i].size() > 2)
 				_array_types.push_back(parameter_tokens[i][4]->identifier);
 			else {
+				CHESTNUT_THROW_ERROR(L"Error! array must contain type.", "ARRAY_MUST_CONTAIN_TYPE", "0x14", tokens[0]->line);
 				std::cout << "Error! array should have a type" << std::endl;
 				exit(EXIT_FAILURE);
 			}
@@ -1247,8 +1252,8 @@ CastAST* create_cast_ast(std::vector<Token*>& tokens) {
 LoadAST* create_load_ast(std::vector<Token*>& tokens) {
 	LoadAST* result = nullptr;
 
-	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
-	std::string path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
 
 	result = new LoadAST(name, path);
 
@@ -1258,8 +1263,8 @@ LoadAST* create_load_ast(std::vector<Token*>& tokens) {
 FontAST* create_font_ast(std::vector<Token*>& tokens) {
 	FontAST* result = nullptr;
 
-	std::string name = pull_token_and_expect(tokens, tok_identifier)->identifier;
-	std::string path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
+	std::wstring name = pull_token_and_expect(tokens, tok_identifier)->identifier;
+	std::wstring path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
 
 	result = new FontAST(name, path);
 
@@ -1313,7 +1318,7 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		result = create_cast_ast(tokens);
 	}
 	else if (first_token->type == tok_true || first_token->type == tok_false) {
-		result = new BoolAST(first_token->identifier == "true");
+		result = new BoolAST(first_token->identifier == L"true");
 	}
 	else if (first_token->type == tok_l_paren || first_token->type == tok_r_paren) {
 		result = new ParenAST(first_token->identifier);
@@ -1336,7 +1341,7 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 			result = create_scene_declaration_ast(tokens);
 	}
 	else if (first_token->type == tok_pubilc || first_token->type == tok_private || first_token->type == tok_protected) {
-		std::string access_modifier = first_token->identifier;
+		std::wstring access_modifier = first_token->identifier;
 
 		BaseAST* _ast = parse(tokens);
 

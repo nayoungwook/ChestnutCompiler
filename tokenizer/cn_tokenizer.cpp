@@ -1,6 +1,6 @@
 #include "../parser/cn_parser.h"
 
-char get_char(std::string& line, int& _i, int line_number) {
+wchar_t get_char(std::wstring& line, int& _i, int line_number) {
 
 	if (line.size() <= _i) {
 		std::wstring w_line;
@@ -14,8 +14,8 @@ char get_char(std::string& line, int& _i, int line_number) {
 	return cur_char = line[_i++];
 }
 
-std::string get_number_literal(std::string& identifier, std::string& line, int& i, int line_number) {
-	std::string number_string = "";
+std::wstring get_number_literal(std::wstring& identifier, std::wstring& line, int& i, int line_number) {
+	std::wstring number_string = L"";
 
 	while (isdigit(cur_char) || cur_char == '.') {
 		number_string += cur_char;
@@ -36,87 +36,101 @@ std::string get_number_literal(std::string& identifier, std::string& line, int& 
 	return number_string;
 }
 
-std::vector<Token*> tokenize(std::string line, int line_number) {
+bool is_special_characters(const wchar_t& wc) {
+	if (wc == L'_') return false;
+
+	if ((wc >= L'!' && wc <= L'/') ||
+		(wc >= L':' && wc <= L'@') ||
+		(wc >= L'[' && wc <= L'`') ||
+		(wc >= L'{' && wc <= L'~')) {
+		return true;
+	}
+	return false;
+}
+
+std::vector<Token*> tokenize(std::wstring line, int line_number) {
 	std::vector<Token*> result_tokens;
 
 	int type = 0;
-	std::string identifier = "";
+	std::wstring identifier = L"";
 	double number = 0;
 
 	int i = 0;
 
 	while (i < line.length()) {
-		identifier = "";
+		identifier = L"";
 
 		get_char(line, i, line_number);
 
+
 		if (isspace(cur_char)) continue;
 
-		if (isalpha(cur_char) || cur_char == '_') {
+		if (!(is_special_characters(cur_char) || isdigit(cur_char) || cur_char == ' ')) {
 			type = tok_identifier;
-			while (isalnum(next_char) || next_char == '_') {
+
+			while (!(is_special_characters(next_char) || isdigit(next_char) || next_char == ' ')) {
 				if (i >= line.length()) break;
 				identifier += cur_char;
 				get_char(line, i, line_number);
 			}
 			identifier += cur_char;
 
-			if (identifier == "func") type = tok_func;
-			if (identifier == "if") type = tok_if;
-			if (identifier == "else") type = tok_else;
-			if (identifier == "for") type = tok_for;
-			if (identifier == "while") type = tok_while;
+			if (identifier == L"func") type = tok_func;
+			if (identifier == L"if") type = tok_if;
+			if (identifier == L"else") type = tok_else;
+			if (identifier == L"for") type = tok_for;
+			if (identifier == L"while") type = tok_while;
 
-			if (identifier == "number") type = tok_number;
-			if (identifier == "int") type = tok_int;
-			if (identifier == "float") type = tok_float;
-			if (identifier == "bool") type = tok_bool;
-			if (identifier == "char") type = tok_char;
-			if (identifier == "string") type = tok_string;
-			if (identifier == "array") type = tok_array;
+			if (identifier == L"number") type = tok_number;
+			if (identifier == L"int") type = tok_int;
+			if (identifier == L"float") type = tok_float;
+			if (identifier == L"bool") type = tok_bool;
+			if (identifier == L"char") type = tok_char;
+			if (identifier == L"string") type = tok_string;
+			if (identifier == L"array") type = tok_array;
 
-			if (identifier == "cast") type = tok_cast;
+			if (identifier == L"cast") type = tok_cast;
 
-			if (identifier == "public") type = tok_pubilc;
-			if (identifier == "private") type = tok_private;
-			if (identifier == "protected") type = tok_protected;
-			if (identifier == "static") type = tok_static;
-			if (identifier == "const") type = tok_const;
+			if (identifier == L"public") type = tok_pubilc;
+			if (identifier == L"private") type = tok_private;
+			if (identifier == L"protected") type = tok_protected;
+			if (identifier == L"static") type = tok_static;
+			if (identifier == L"const") type = tok_const;
 
-			if (identifier == "return") type = tok_return;
-			if (identifier == "class") type = tok_class;
+			if (identifier == L"return") type = tok_return;
+			if (identifier == L"class") type = tok_class;
 
-			if (identifier == "new") type = tok_new;
-			if (identifier == "var") type = tok_var;
+			if (identifier == L"new") type = tok_new;
+			if (identifier == L"var") type = tok_var;
 
-			if (identifier == "true") type = tok_true;
-			if (identifier == "false") type = tok_false;
-			if (identifier == "extends") type = tok_extends;
-			if (identifier == "constructor") type = tok_constructor;
-			if (identifier == "scene") type = tok_scene;
-			if (identifier == "object") type = tok_object;
-			if (identifier == "vector") type = tok_vector;
+			if (identifier == L"true") type = tok_true;
+			if (identifier == L"false") type = tok_false;
+			if (identifier == L"extends") type = tok_extends;
+			if (identifier == L"constructor") type = tok_constructor;
+			if (identifier == L"scene") type = tok_scene;
+			if (identifier == L"object") type = tok_object;
+			if (identifier == L"vector") type = tok_vector;
 		}
 		else if (isdigit(cur_char)) {
 			type = tok_identifier_number;
 			get_number_literal(identifier, line, i, line_number);
 		}
-		else if (cur_char == '\"') {
+		else if (cur_char == L'\"') {
 			type = tok_string_identifier;
 			bool is_inner_quote = false;
 
-			identifier = "";
+			identifier = L"";
 
 			while (true) {
 				identifier += cur_char;
 
-				if (cur_char == '\\' && next_char == '\"') {
+				if (cur_char == L'\\' && next_char == L'\"') {
 					is_inner_quote = true;
 				}
 
 				get_char(line, i, line_number);
 
-				if (cur_char == '\"') {
+				if (cur_char == L'\"') {
 					if (is_inner_quote) {
 						is_inner_quote = false;
 						continue;
@@ -129,194 +143,194 @@ std::vector<Token*> tokenize(std::string line, int line_number) {
 			}
 		}
 		// TODO : remove this comment token it occurs error
-		else if (cur_char == '/' && next_char == '/') {
+		else if (cur_char == L'/' && next_char == L'/') {
 			type = tok_comment;
-			identifier = "(comment)";
+			identifier = L"(comment)";
 			//result_tokens.push_back(new Token(type, identifier, number, line_number));
 			return result_tokens;
 		}
-		else if (cur_char == '&') {
-			if (next_char == '&') {
+		else if (cur_char == L'&') {
+			if (next_char == L'&') {
 				type = tok_and;
-				identifier = "&&";
+				identifier = L"&&";
 				i++;
 			}
 		}
-		else if (cur_char == '|') {
-			if (next_char == '|') {
+		else if (cur_char == L'|') {
+			if (next_char == L'|') {
 				type = tok_or;
-				identifier = "||";
+				identifier = L"||";
 				i++;
 			}
 		}
-		else if (cur_char == '=') {
-			if (next_char == '=') {
+		else if (cur_char == L'=') {
+			if (next_char == L'=') {
 				type = tok_equal;
-				identifier = "==";
+				identifier = L"==";
 				i++;
 			}
 			else {
 				type = tok_assign;
-				identifier = "=";
+				identifier = L"=";
 			}
 		}
-		else if (cur_char == '.') {
+		else if (cur_char == L'.') {
 			type = tok_dot;
-			identifier = ".";
+			identifier = L".";
 		}
-		else if (cur_char == '<') {
-			if (next_char == '=') {
+		else if (cur_char == L'<') {
+			if (next_char == L'=') {
 				type = tok_eq_greater;
-				identifier = "<=";
+				identifier = L"<=";
 				i++;
 			}
 			else {
 				type = tok_greater;
-				identifier = "<";
+				identifier = L"<";
 			}
 		}
-		else if (cur_char == '>') {
-			if (next_char == '=') {
+		else if (cur_char == L'>') {
+			if (next_char == L'=') {
 				type = tok_eq_lesser;
-				identifier = ">=";
+				identifier = L">=";
 				i++;
 			}
 			else {
 				type = tok_lesser;
-				identifier = ">";
+				identifier = L">";
 			}
 		}
-		else if (cur_char == '!') {
-			if (next_char == '=') {
+		else if (cur_char == L'!') {
+			if (next_char == L'=') {
 				type = tok_not_equal;
-				identifier = "!=";
+				identifier = L"!=";
 				i++;
 			}
 			else {
 				type = tok_not;
-				identifier = "!";
+				identifier = L"!";
 			}
 		}
-		else if (cur_char == ')') {
+		else if (cur_char == L')') {
 			type = tok_r_paren;
-			identifier = ")";
+			identifier = L")";
 		}
-		else if (cur_char == '(') {
+		else if (cur_char == L'(') {
 			type = tok_l_paren;
-			identifier = "(";
+			identifier = L"(";
 		}
-		else if (cur_char == '}') {
+		else if (cur_char == L'}') {
 			type = tok_r_bracket;
-			identifier = "}";
+			identifier = L"}";
 		}
-		else if (cur_char == '{') {
+		else if (cur_char == L'{') {
 			type = tok_l_bracket;
-			identifier = "{";
+			identifier = L"{";
 		}
-		else if (cur_char == ']') {
+		else if (cur_char == L']') {
 			type = tok_r_sq_bracket;
-			identifier = "]";
+			identifier = L"]";
 		}
-		else if (cur_char == '[') {
+		else if (cur_char == L'[') {
 			type = tok_l_sq_bracket;
-			identifier = "[";
+			identifier = L"[";
 		}
-		else if (cur_char == '^') {
+		else if (cur_char == L'^') {
 			type = tok_pow;
-			identifier = "^";
+			identifier = L"^";
 		}
-		else if (cur_char == '+') {
-			if (next_char == '+') {
+		else if (cur_char == L'+') {
+			if (next_char == L'+') {
 				type = tok_incre;
-				identifier = "++";
+				identifier = L"++";
 				i++;
 			}
-			else if (next_char == '=') {
+			else if (next_char == L'=') {
 				type = tok_bin_incre;
-				identifier = "+=";
+				identifier = L"+=";
 				i++;
 			}
 			else {
 				type = tok_pls;
-				identifier = "+";
+				identifier = L"+";
 			}
 		}
-		else if (cur_char == '-') {
-			if (next_char == '-') {
+		else if (cur_char == L'-') {
+			if (next_char == L'-') {
 				type = tok_decre;
-				identifier = "--";
+				identifier = L"--";
 				i++;
 			}
-			else if (next_char == '=') {
+			else if (next_char == L'=') {
 				type = tok_bin_decre;
-				identifier = "-=";
+				identifier = L"-=";
 				i++;
 			}
 			else {
 				type = tok_min;
-				identifier = "-";
+				identifier = L"-";
 			}
 		}
-		else if (cur_char == '*') {
-			if (next_char == '=') {
+		else if (cur_char == L'*') {
+			if (next_char == L'=') {
 				type = tok_bin_mul;
-				identifier = "*=";
+				identifier = L"*=";
 				i++;
 			}
 			else {
 				type = tok_mul;
-				identifier = "*";
+				identifier = L"*";
 			}
 		}
-		else if (cur_char == '/') {
-			if (next_char == '=') {
+		else if (cur_char == L'/') {
+			if (next_char == L'=') {
 				type = tok_bin_div;
-				identifier = "/=";
+				identifier = L"/=";
 				i++;
 			}
 			else {
 				type = tok_div;
-				identifier = "/";
+				identifier = L"/";
 			}
 		}
-		else if (cur_char == '#') {
+		else if (cur_char == L'#') {
 
-			if (next_char == ' ') {
+			if (next_char == L' ') {
 				type = tok_sharp;
-				identifier = "#";
+				identifier = L"#";
 			}
 			else {
-				while (isalnum(next_char) || next_char == '_') {
+				while (isalnum(next_char) || next_char == L'_') {
 					if (i >= line.length()) break;
 					identifier += cur_char;
 					get_char(line, i, line_number);
 				}
 				identifier += cur_char;
 
-				if (identifier == "#import")
+				if (identifier == L"#import")
 					type = tok_import;
-				else if (identifier == "#load")
+				else if (identifier == L"#load")
 					type = tok_load;
-				else if(identifier == "#font")
+				else if (identifier == L"#font")
 					type = tok_font;
 			}
 
 		}
-		else if (cur_char == ';') {
+		else if (cur_char == L';') {
 			type = tok_semi_colon;
-			identifier = ";";
+			identifier = L";";
 		}
-		else if (cur_char == ':') {
+		else if (cur_char == L':') {
 			type = tok_colon;
-			identifier = ":";
+			identifier = L":";
 		}
-		else if (cur_char == ',') {
+		else if (cur_char == L',') {
 			type = tok_comma;
-			identifier = ",";
+			identifier = L",";
 		}
-		else if (cur_char == '%') {
+		else if (cur_char == L'%') {
 			type = tok_mod;
-			identifier = "%";
+			identifier = L"%";
 		}
 
 		result_tokens.push_back(new Token(type, identifier, line_number));

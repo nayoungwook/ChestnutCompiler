@@ -1,51 +1,51 @@
 #include "cn_ir_generator.h"
 
-std::unordered_map<std::string, ClassAST*> parsed_class_data;
-std::unordered_map<std::string, FunctionDeclarationAST*> parsed_function_data;
-std::unordered_map<std::string, unsigned int> class_id;
-std::unordered_map<std::string, std::unordered_map<std::string, MemberFunctionData>> member_function_data;
-std::unordered_map<std::string, std::unordered_map<std::string, MemberVariableData>> member_variable_data;
+std::unordered_map<std::wstring, ClassAST*> parsed_class_data;
+std::unordered_map<std::wstring, FunctionDeclarationAST*> parsed_function_data;
+std::unordered_map<std::wstring, unsigned int> class_id;
+std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberFunctionData>> member_function_data;
+std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberVariableData>> member_variable_data;
 
-inline bool exist_in_symbol_table(std::unordered_map<std::string, unsigned int> area, std::string const& name) {
+inline bool exist_in_symbol_table(std::unordered_map<std::wstring, unsigned int> area, std::wstring const& name) {
 	return area.find(name) != area.end();
 }
 
-void append_data(std::string& target, std::string content, int indentation) {
+void append_data(std::wstring& target, std::wstring content, int indentation) {
 
 	for (int i = 0; i < indentation; i++) {
-		target += "    ";
+		target += L"    ";
 	}
 
-	target += content + "\n";
+	target += content + L"\n";
 }
 
 void declare_builtin_functions() {
-	builtin_function_symbol.insert(std::make_pair("print", 0));
-	builtin_function_symbol.insert(std::make_pair("window", 1));
-	builtin_function_symbol.insert(std::make_pair("load_scene", 2));
-	builtin_function_symbol.insert(std::make_pair("image", 3));
-	builtin_function_symbol.insert(std::make_pair("background", 4));
-	builtin_function_symbol.insert(std::make_pair("random", 5));
-	builtin_function_symbol.insert(std::make_pair("sin", 6));
-	builtin_function_symbol.insert(std::make_pair("cos", 7));
-	builtin_function_symbol.insert(std::make_pair("tan", 8));
-	builtin_function_symbol.insert(std::make_pair("atan", 9));
-	builtin_function_symbol.insert(std::make_pair("abs", 10));
-	builtin_function_symbol.insert(std::make_pair("random_range", 11));
-	builtin_function_symbol.insert(std::make_pair("sqrt", 12));
-	builtin_function_symbol.insert(std::make_pair("text", 13));
+	builtin_function_symbol.insert(std::make_pair(L"print", 0));
+	builtin_function_symbol.insert(std::make_pair(L"window", 1));
+	builtin_function_symbol.insert(std::make_pair(L"load_scene", 2));
+	builtin_function_symbol.insert(std::make_pair(L"image", 3));
+	builtin_function_symbol.insert(std::make_pair(L"background", 4));
+	builtin_function_symbol.insert(std::make_pair(L"random", 5));
+	builtin_function_symbol.insert(std::make_pair(L"sin", 6));
+	builtin_function_symbol.insert(std::make_pair(L"cos", 7));
+	builtin_function_symbol.insert(std::make_pair(L"tan", 8));
+	builtin_function_symbol.insert(std::make_pair(L"atan", 9));
+	builtin_function_symbol.insert(std::make_pair(L"abs", 10));
+	builtin_function_symbol.insert(std::make_pair(L"random_range", 11));
+	builtin_function_symbol.insert(std::make_pair(L"sqrt", 12));
+	builtin_function_symbol.insert(std::make_pair(L"text", 13));
 }
 
 void declare_builtin_variables() {
-	Data shader_data = { 0, "shader", false };
-	global_variable_symbol.insert(std::make_pair("default_shader", shader_data));
+	Data shader_data = { 0, L"shader", false };
+	global_variable_symbol.insert(std::make_pair(L"default_shader", shader_data));
 
-	Data mouse_data = { 1, "vector", false };
-	global_variable_symbol.insert(std::make_pair("mouse", mouse_data));
+	Data mouse_data = { 1, L"vector", false };
+	global_variable_symbol.insert(std::make_pair(L"mouse", mouse_data));
 }
 
 void create_scope() {
-	std::vector<std::unordered_map<std::string, Data>>* temp = new std::vector<std::unordered_map<std::string, Data>>;
+	std::vector<std::unordered_map<std::wstring, Data>>* temp = new std::vector<std::unordered_map<std::wstring, Data>>;
 	temp->push_back({});
 	local_variable_symbols.push(temp);
 }
@@ -54,18 +54,18 @@ void destroy_scope() {
 	local_variable_symbols.pop();
 }
 
-const std::string integer_to_hex(int i) {
-	std::ostringstream ss;
+const std::wstring integer_to_hex(int i) {
+	std::wostringstream ss;
 	ss << "0x" << std::hex << i;
-	std::string result = ss.str();
+	std::wstring result = ss.str();
 	return result;
 }
 
-scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifier_ast) {
-	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+scopes get_scope_of_identifier(std::wstring const& identifier, BaseAST* identifier_ast) {
+	std::vector<std::unordered_map<std::wstring, Data>>* local_variable_symbol = local_variable_symbols.top();
 	int id = get_local_variable_id(local_variable_symbol, identifier);
 
-	if (identifier == "this" || identifier == "null") {
+	if (identifier == L"this" || identifier == L"null") {
 		return scope_local;
 	}
 	else {
@@ -76,10 +76,10 @@ scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifie
 				return scope_class;
 			}
 			else {
-				std::string searcher = current_class;
+				std::wstring searcher = current_class;
 
 				if (parsed_class_data.find(searcher) != parsed_class_data.end()) {
-					while (parsed_class_data[searcher]->parent_type != "") {
+					while (parsed_class_data[searcher]->parent_type != L"") {
 						searcher = parsed_class_data[searcher]->parent_type;
 
 						if (member_variable_data[searcher].find(identifier) != member_variable_data[searcher].end()) {
@@ -103,8 +103,8 @@ scopes get_scope_of_identifier(std::string const& identifier, BaseAST* identifie
 	CHESTNUT_THROW_ERROR(L"Failed to find identifier : " + w_identifier, "FAILED_TO_FIND_IDENTIFIER", "004", identifier_ast->line_number);
 }
 
-scopes get_scope_of_function(std::string const& identifier, int line_number) {
-	std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+scopes get_scope_of_function(std::wstring const& identifier, int line_number) {
+	std::vector<std::unordered_map<std::wstring, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 	if (exist_in_symbol_table(global_function_symbol, identifier)) {
 		return scope_global;
@@ -117,8 +117,8 @@ scopes get_scope_of_function(std::string const& identifier, int line_number) {
 		return scope_class;
 	}
 	else {
-		std::string searcher = current_class;
-		while (parsed_class_data[searcher]->parent_type != "") {
+		std::wstring searcher = current_class;
+		while (parsed_class_data[searcher]->parent_type != L"") {
 			searcher = parsed_class_data[searcher]->parent_type;
 
 			if (member_function_data[searcher].find(identifier) != member_function_data[searcher].end()) {
@@ -132,27 +132,27 @@ scopes get_scope_of_function(std::string const& identifier, int line_number) {
 	CHESTNUT_THROW_ERROR(L"Failed to find function " + w_function_name, "FAILED_TO_FIND_FUNCTION_NAME", "008", line_number);
 }
 
-std::string create_identifier_ir(IdentifierAST* identifier_ast) {
-	std::string result = "";
+std::wstring create_identifier_ir(IdentifierAST* identifier_ast) {
+	std::wstring result = L"";
 
-	if (identifier_ast->identifier == "this") {
-		result = "@PUSH_THIS " + std::to_string(identifier_ast->line_number) + "\n";
+	if (identifier_ast->identifier == L"this") {
+		result = L"@PUSH_THIS " + std::to_wstring(identifier_ast->line_number) + L"\n";
 	}
-	else if (identifier_ast->identifier == "null") {
-		result = "@PUSH_NULL " + std::to_string(identifier_ast->line_number) + "\n";
+	else if (identifier_ast->identifier == L"null") {
+		result = L"@PUSH_NULL " + std::to_wstring(identifier_ast->line_number) + L"\n";
 	}
 	else {
 		scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
 
 		if (scope == scope_local) {
-			result = "@LOAD_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+			result = L"@LOAD_LOCAL " + std::to_wstring(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number) + L"\n";
 
 		}
 		else if (scope == scope_class) { // find variable in current class declaration.
-			std::string searcher = current_class;
+			std::wstring searcher = current_class;
 			bool found_in_parent = false;
-			while (parsed_class_data[searcher]->parent_type != "") {
+			while (parsed_class_data[searcher]->parent_type != L"") {
 				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) { // member variable found.
 					break;
 				}
@@ -162,7 +162,7 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 			}
 
 			// but, it was found in parnet and access modifier was private.
-			if (member_variable_data[searcher][identifier_ast->identifier].access_modifier == "private" && found_in_parent) {
+			if (member_variable_data[searcher][identifier_ast->identifier].access_modifier == L"private" && found_in_parent) {
 				std::wstring w_name;
 				w_name.assign(identifier_ast->identifier.begin(), identifier_ast->identifier.end());
 
@@ -171,40 +171,40 @@ std::string create_identifier_ir(IdentifierAST* identifier_ast) {
 					, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "011", identifier_ast->line_number);
 			}
 
-			result = "@LOAD_CLASS " + std::to_string(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+			result = L"@LOAD_CLASS " + std::to_wstring(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
 		}
 		else if (scope == scope_global) {
-			result = "@LOAD_GLOBAL " + std::to_string(global_variable_symbol[identifier_ast->identifier].id)
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+			result = L"@LOAD_GLOBAL " + std::to_wstring(global_variable_symbol[identifier_ast->identifier].id)
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
 		}
 
-		result += "\n";
+		result += L"\n";
 
 		if (identifier_ast->type == array_refer_ast) {
 			for (int i = 0; i < ((ArrayReferAST*)identifier_ast)->indexes.size(); i++) {
 				append_data(result, create_ir(((ArrayReferAST*)identifier_ast)->indexes[i], 0), 0);
-				append_data(result, "@ARRAY_GET " + std::to_string(identifier_ast->line_number), 0);
+				append_data(result, L"@ARRAY_GET " + std::to_wstring(identifier_ast->line_number), 0);
 			}
 		}
 	}
 
-	result += "\n";
+	result += L"\n";
 
-	result += create_attr_ir(identifier_ast, "lhs");
+	result += create_attr_ir(identifier_ast, L"lhs");
 
 	return result;
 }
 
-Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
+Data get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast) {
 	scopes scope = get_scope_of_identifier(identifier, data_ast);
 
 	if (scope == scope_local) {
-		std::vector<std::unordered_map<std::string, Data>>* area = local_variable_symbols.top();
+		std::vector<std::unordered_map<std::wstring, Data>>* area = local_variable_symbols.top();
 		for (int i = 0; i < area->size(); i++) {
 			if (area->at(i).find(identifier) != area->at(i).end()) {
-				std::unordered_map<std::string, Data>::iterator area_iterator;
-				std::unordered_map<std::string, Data> found_area = area->at(i);
+				std::unordered_map<std::wstring, Data>::iterator area_iterator;
+				std::unordered_map<std::wstring, Data> found_area = area->at(i);
 
 				for (area_iterator = found_area.begin(); area_iterator != found_area.end(); area_iterator++) {
 					if (area_iterator->first == identifier)
@@ -226,23 +226,23 @@ Data get_data_of_variable(std::string const& identifier, BaseAST* data_ast) {
 	}
 }
 
-MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string const& type, bool is_array) {
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstring const& type, bool is_array) {
 	MemberVariableData member_variable;
 	member_variable.id = -1;
 
-	if (parsed_class_data[type] == nullptr && type != "vector") {
-		std::cout << "We don\'t have \"" << type << "\" as a class. for read member var";
+	if (parsed_class_data[type] == nullptr && type != L"vector") {
+		std::wcout << L"We don\'t have \"" << type << L"\" as a class. for read member var";
 		exit(EXIT_FAILURE);
 	}
 
 	bool found_in_parent_memory = false;
 
-	if (type == "vector") {
-		if (searcher->identifier == "x")
+	if (type == L"vector") {
+		if (searcher->identifier == L"x")
 			member_variable.id = 0;
-		else if (searcher->identifier == "y")
+		else if (searcher->identifier == L"y")
 			member_variable.id = 1;
-		else if (searcher->identifier == "z")
+		else if (searcher->identifier == L"z")
 			member_variable.id = 2;
 
 		member_variable.name = searcher->identifier;
@@ -259,7 +259,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 				member_variable.access_modifier = member_variable_data[class_ast_searcher->name][searcher->identifier].access_modifier;
 			}
 
-			if (class_ast_searcher->parent_type == "") break;
+			if (class_ast_searcher->parent_type == L"") break;
 			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 			found_in_parent_memory = true;
 		}
@@ -274,14 +274,14 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::string
 
 		CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_VARIABLE_FROM_CLASS", "007", searcher->line_number);
 	}
-	else if (type != "vector") {
+	else if (type != L"vector") {
 		bool able_to_access = true;
 
 		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
-			if (member_variable.access_modifier == "private") able_to_access = false;
+			if (member_variable.access_modifier == L"private") able_to_access = false;
 		}
 		else if (type != current_class) { // tried to access from outside of class.
-			if (member_variable.access_modifier != "public") able_to_access = false;
+			if (member_variable.access_modifier != L"public") able_to_access = false;
 		}
 
 		if (!able_to_access) {
@@ -301,27 +301,27 @@ MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher) {
 
 	member_function.id = -1;
 
-	if (searcher->function_name == "push") {
+	if (searcher->function_name == L"push") {
 		member_function.id = 0;
-		member_function.name = "push";
+		member_function.name = L"push";
 	}
-	else if (searcher->function_name == "size") {
+	else if (searcher->function_name == L"size") {
 		member_function.id = 1;
-		member_function.name = "size";
+		member_function.name = L"size";
 	}
-	else if (searcher->function_name == "remove") {
+	else if (searcher->function_name == L"remove") {
 		member_function.id = 2;
-		member_function.name = "remove";
+		member_function.name = L"remove";
 	}
-	else if (searcher->function_name == "set") {
+	else if (searcher->function_name == L"set") {
 		member_function.id = 3;
-		member_function.name = "set";
+		member_function.name = L"set";
 	}
 
 	return member_function;
 }
 
-MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::string const& type, bool is_array) {
+MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstring const& type, bool is_array) {
 	MemberFunctionData member_function;
 
 	member_function.id = -1;
@@ -350,7 +350,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 				member_function.access_modifier = member_function_data[class_ast_searcher->name][searcher->function_name].access_modifier;
 			}
 
-			if (class_ast_searcher->parent_type == "") break;
+			if (class_ast_searcher->parent_type == L"") break;
 			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 			found_in_parent_memory = true;
 		}
@@ -372,10 +372,10 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 		bool able_to_access = true;
 
 		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
-			if (member_function.access_modifier == "private") able_to_access = false;
+			if (member_function.access_modifier == L"private") able_to_access = false;
 		}
 		else if (type != current_class) { // tried to access from outside of class.
-			if (member_function.access_modifier != "public") able_to_access = false;
+			if (member_function.access_modifier != L"public") able_to_access = false;
 		}
 
 		if (!able_to_access) {
@@ -390,12 +390,12 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::stri
 	return member_function;
 }
 
-std::string get_type_of_attr_target(BaseAST* attr_target) {
-	std::string type = "";
+std::wstring get_type_of_attr_target(BaseAST* attr_target) {
+	std::wstring type = L"";
 
 	// search for target.
 	if (attr_target->type == ast_type::identifier_ast) {
-		if (((IdentifierAST*)attr_target)->identifier == "this")
+		if (((IdentifierAST*)attr_target)->identifier == L"this")
 			type = current_class;
 		else
 			type = get_data_of_variable(((IdentifierAST*)attr_target)->identifier, attr_target).type;
@@ -415,13 +415,13 @@ bool is_attr_target_array(BaseAST* attr_target) {
 
 	// search for target.
 	if (attr_target->type == ast_type::identifier_ast) {
-		if (((IdentifierAST*)attr_target)->identifier == "this")
+		if (((IdentifierAST*)attr_target)->identifier == L"this")
 			is_array = false;
 		else
 			is_array = get_data_of_variable(((IdentifierAST*)attr_target)->identifier, attr_target).is_array;
 	}
 	else if (attr_target->type == ast_type::function_call_ast) {
-		std::string function_name = ((FunctionCallAST*)attr_target)->function_name;
+		std::wstring function_name = ((FunctionCallAST*)attr_target)->function_name;
 
 		if (parsed_function_data.find(function_name) == parsed_function_data.end()) {
 			std::wstring w_function_name;
@@ -430,7 +430,7 @@ bool is_attr_target_array(BaseAST* attr_target) {
 			CHESTNUT_THROW_ERROR(L"Failed to find function " + w_function_name, "FAILED_TO_FIND_FUNCTION_NAME", "008", attr_target->line_number);
 		}
 
-		is_array = parsed_function_data[function_name]->array_return_type != "";
+		is_array = parsed_function_data[function_name]->array_return_type != L"";
 	}
 	else if (attr_target->type == ast_type::array_refer_ast) {
 		is_array = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier, attr_target).is_array;
@@ -439,16 +439,16 @@ bool is_attr_target_array(BaseAST* attr_target) {
 	return is_array && attr_target->type != array_refer_ast;
 }
 
-std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs_rhs) {
+std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& lhs_rhs) {
 	BaseAST* searcher = identifier_ast;
 	BaseAST* attr_target = identifier_ast;
-	std::string result;
+	std::wstring result;
 
 	while (true) {
 		if (searcher->attr == nullptr) break;
 
 		if (searcher->attr->type == bin_expr_ast) {
-			if (lhs_rhs == "lhs")
+			if (lhs_rhs == L"lhs")
 				searcher = ((BinExprAST*)searcher->attr)->lhs;
 			else
 				searcher = ((BinExprAST*)searcher->attr)->rhs;
@@ -457,37 +457,37 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 			searcher = searcher->attr;
 		}
 
-		std::string type = get_type_of_attr_target(attr_target);
+		std::wstring type = get_type_of_attr_target(attr_target);
 		bool is_array = is_attr_target_array(attr_target);
 
 		//append attribute data.
 		if (searcher->type == ast_type::identifier_ast) {
 			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
 
-			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
-				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
+			append_data(result, L"@LOAD_ATTR " + std::to_wstring(member_variable.id)
+				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 		}
 		else if (searcher->type == ast_type::function_call_ast) {
 			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, type, is_array);
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
-				std::string param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
+				std::wstring param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
 			}
 
-			append_data(result, "@CALL_ATTR " + std::to_string(member_function.id)
-				+ " (" + member_function.name + ") "
-				+ std::to_string(((FunctionCallAST*)searcher)->parameters.size()) + " " + std::to_string(searcher->line_number) + "\n", 0);
+			append_data(result, L"@CALL_ATTR " + std::to_wstring(member_function.id)
+				+ L" (" + member_function.name + L") "
+				+ std::to_wstring(((FunctionCallAST*)searcher)->parameters.size()) + L" " + std::to_wstring(searcher->line_number) + L"\n", 0);
 		}
 		else if (searcher->type == ast_type::array_refer_ast) {
 			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
 
-			append_data(result, "@LOAD_ATTR " + std::to_string(member_variable.id)
-				+ " (" + member_variable.name + ") " + std::to_string(searcher->line_number) + "\n", 0);
+			append_data(result, L"@LOAD_ATTR " + std::to_wstring(member_variable.id)
+				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 
 			for (int i = 0; i < ((ArrayReferAST*)searcher)->indexes.size(); i++) {
 				append_data(result, create_ir(((ArrayReferAST*)searcher)->indexes[i], 0), 0);
-				append_data(result, "@ARRAY_GET " + std::to_string(searcher->line_number), 0);
+				append_data(result, L"@ARRAY_GET " + std::to_wstring(searcher->line_number), 0);
 			}
 		}
 
@@ -497,14 +497,14 @@ std::string create_attr_ir(IdentifierAST* identifier_ast, std::string const& lhs
 	return result;
 }
 
-BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // set nullptr to last ast of identifier.
+BaseAST* extract_last_ast(BaseAST* ast, std::wstring const& lhs_rhs) { // set nullptr to last ast of identifier.
 	BaseAST* searcher = ast;
 	BaseAST* attr_target = ast;
 
 	while (true) {
 		if (ast->attr == nullptr) return nullptr;
 		if (ast->attr->type == bin_expr_ast) {
-			if (lhs_rhs == "lhs")
+			if (lhs_rhs == L"lhs")
 				searcher = ((BinExprAST*)searcher->attr)->lhs;
 			else
 				searcher = ((BinExprAST*)searcher->attr)->rhs;
@@ -523,7 +523,7 @@ BaseAST* extract_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // set nul
 	return nullptr;
 }
 
-BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // just 'get' the last ast of identifier.
+BaseAST* get_last_ast(BaseAST* ast, std::wstring const& lhs_rhs) { // just 'get' the last ast of identifier.
 	BaseAST* searcher = ast;
 	BaseAST* attr_target = ast;
 
@@ -531,7 +531,7 @@ BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // just 'get' 
 
 	while (true) {
 		if (ast->attr->type == bin_expr_ast) {
-			if (lhs_rhs == "lhs")
+			if (lhs_rhs == L"lhs")
 				searcher = ((BinExprAST*)searcher->attr)->lhs;
 			else
 				searcher = ((BinExprAST*)searcher->attr)->rhs;
@@ -549,12 +549,12 @@ BaseAST* get_last_ast(BaseAST* ast, std::string const& lhs_rhs) { // just 'get' 
 	return nullptr;
 }
 
-std::string create_assign_ir(BaseAST* ast, int indentation) {
+std::wstring create_assign_ir(BaseAST* ast, int indentation) {
 	BinExprAST* bin_ast = ((BinExprAST*)ast);
 
-	BaseAST* last_ast = extract_last_ast(bin_ast->lhs, "lhs"); // extract the last ast for make the ir of 'store'
+	BaseAST* last_ast = extract_last_ast(bin_ast->lhs, L"lhs"); // extract the last ast for make the ir of 'store'
 
-	std::string result = "";
+	std::wstring result = L"";
 
 	if (bin_ast->rhs != nullptr) // if rhs is not already declared.
 		result += create_ir(bin_ast->rhs, indentation);
@@ -567,12 +567,12 @@ std::string create_assign_ir(BaseAST* ast, int indentation) {
 		scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
 
 		if (scope == scope_local) {
-			result += "@STORE_LOCAL " + std::to_string(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number) + "\n";
+			result += L"@STORE_LOCAL " + std::to_wstring(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number) + L"\n";
 		}
 		else if (scope == scope_class) {
-			std::string searcher = current_class;
-			while (parsed_class_data[searcher]->parent_type != "") {
+			std::wstring searcher = current_class;
+			while (parsed_class_data[searcher]->parent_type != L"") {
 				if (member_variable_data[searcher].find(identifier_ast->identifier) != member_variable_data[searcher].end()) {
 					break;
 				}
@@ -580,38 +580,38 @@ std::string create_assign_ir(BaseAST* ast, int indentation) {
 				searcher = parsed_class_data[searcher]->parent_type;
 			}
 
-			result += "@STORE_CLASS " + std::to_string(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+			result += L"@STORE_CLASS " + std::to_wstring(get_parent_member_variable_size(searcher) + member_variable_data[searcher][identifier_ast->identifier].id)
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
 		}
 		else if (scope == scope_global) {
-			result += "@STORE_GLOBAL " + std::to_string(global_variable_symbol[identifier_ast->identifier].id)
-				+ " (" + identifier_ast->identifier + ") " + std::to_string(identifier_ast->line_number);
+			result += L"@STORE_GLOBAL " + std::to_wstring(global_variable_symbol[identifier_ast->identifier].id)
+				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
 		}
 	}
 	else { // store ir for attr.
 		IdentifierAST* identifier_ast = (IdentifierAST*)bin_ast->lhs;
 		result += create_identifier_ir(identifier_ast);
 
-		BaseAST* attr_target = get_last_ast(identifier_ast, "lhs");
+		BaseAST* attr_target = get_last_ast(identifier_ast, L"lhs");
 
-		std::string type = get_type_of_attr_target(attr_target);
+		std::wstring type = get_type_of_attr_target(attr_target);
 		bool is_array = is_attr_target_array(attr_target);
 
 		MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)last_ast, type, is_array);
 
-		result += "@STORE_ATTR " + std::to_string(member_variable.id)
-			+ " (" + member_variable.name + ") " + std::to_string(attr_target->line_number) + "\n";
+		result += L"@STORE_ATTR " + std::to_wstring(member_variable.id)
+			+ L" (" + member_variable.name + L") " + std::to_wstring(attr_target->line_number) + L"\n";
 	}
 
 	return result;
 }
 
-int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area, std::string const& obj_identifier) {
+int get_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* area, std::wstring const& obj_identifier) {
 	int result = 0;
 	for (int i = 0; i < area->size(); i++) {
 		if (area->at(i).find(obj_identifier) != area->at(i).end()) {
-			std::unordered_map<std::string, Data>::iterator area_iterator;
-			std::unordered_map<std::string, Data> found_area = area->at(i);
+			std::unordered_map<std::wstring, Data>::iterator area_iterator;
+			std::unordered_map<std::wstring, Data> found_area = area->at(i);
 
 			for (area_iterator = found_area.begin(); area_iterator != found_area.end(); area_iterator++) {
 				if (area_iterator->first == obj_identifier) break;
@@ -625,7 +625,7 @@ int get_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* ar
 	return -1;
 }
 
-unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::string, Data>>* area) {
+unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* area) {
 	int result = 0;
 	for (int i = 0; i < area->size(); i++) {
 		result += area->at(i).size();
@@ -633,12 +633,12 @@ unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::stri
 	return result;
 }
 
-unsigned int get_parent_member_variable_size(std::string const& class_name) {
+unsigned int get_parent_member_variable_size(std::wstring const& class_name) {
 	ClassAST* class_ast_searcher = parsed_class_data[class_name];
 	unsigned int parent_id_size = 0;
 
 	while (true) {
-		if (class_ast_searcher->parent_type == "") break;
+		if (class_ast_searcher->parent_type == L"") break;
 
 		class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 
@@ -648,12 +648,12 @@ unsigned int get_parent_member_variable_size(std::string const& class_name) {
 	return parent_id_size;
 }
 
-unsigned int get_parent_member_function_size(std::string const& class_name) {
+unsigned int get_parent_member_function_size(std::wstring const& class_name) {
 	ClassAST* class_ast_searcher = parsed_class_data[class_name];
 	unsigned int parent_id_size = 0;
 
 	while (true) {
-		if (class_ast_searcher->parent_type == "") break;
+		if (class_ast_searcher->parent_type == L"") break;
 
 		class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
 
@@ -663,42 +663,42 @@ unsigned int get_parent_member_function_size(std::string const& class_name) {
 	return parent_id_size;
 }
 
-void create_super_call(BaseAST* ast, std::string& result, int indentation) {
+void create_super_call(BaseAST* ast, std::wstring& result, int indentation) {
 	FunctionCallAST* function_call_ast = (FunctionCallAST*)ast;
-	std::string line = "@SUPER_CALL " + std::to_string(function_call_ast->parameters.size())
-		+ " " + std::to_string(ast->line_number);
+	std::wstring line = L"@SUPER_CALL " + std::to_wstring(function_call_ast->parameters.size())
+		+ L" " + std::to_wstring(ast->line_number);
 
 	for (int i = function_call_ast->parameters.size() - 1; i >= 0; i--) {
-		std::string param = create_ir(function_call_ast->parameters[i], 0);
+		std::wstring param = create_ir(function_call_ast->parameters[i], 0);
 		append_data(result, param, indentation);
 	}
 
 	append_data(result, line, 1);
 }
 
-const std::string create_ir(BaseAST* ast, int indentation) {
+const std::wstring create_ir(BaseAST* ast, int indentation) {
 
-	std::string result = "";
+	std::wstring result = L"";
 
 	switch (ast->type) {
 
 	case import_ast: {
 		ImportAST* import_ast = (ImportAST*)ast;
-		append_data(result, "#IMPORT " + import_ast->import_type + " " + std::to_string(ast->line_number) + "\n", indentation);
+		append_data(result, L"#IMPORT " + import_ast->import_type + L" " + std::to_wstring(ast->line_number) + L"\n", indentation);
 
 		break;
 	}
 
 	case font_ast: {
 		FontAST* font_ast = (FontAST*)ast;
-		append_data(result, "#FONT " + font_ast->name + " " + font_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
+		append_data(result, L"#FONT " + font_ast->name + L" " + font_ast->path + L" " + std::to_wstring(ast->line_number) + L"\n", indentation);
 
 		break;
 	}
 
 	case load_ast: {
 		LoadAST* load_ast = (LoadAST*)ast;
-		append_data(result, "#LOAD " + load_ast->name + " " + load_ast->path + " " + std::to_string(ast->line_number) + "\n", indentation);
+		append_data(result, L"#LOAD " + load_ast->name + L" " + load_ast->path + L" " + std::to_wstring(ast->line_number) + L"\n", indentation);
 
 		break;
 	}
@@ -711,7 +711,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_ir(vector_declaration_ast->elements[i], 0), indentation + 1);
 		}
 
-		append_data(result, "@VECTOR " + std::to_string(vector_declaration_ast->elements.size()) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@VECTOR " + std::to_wstring(vector_declaration_ast->elements.size()) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		break;
 	}
@@ -723,7 +723,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_ir(array_ast->elements[i], 0), indentation + 1);
 		}
 
-		append_data(result, "@ARRAY " + std::to_string(array_ast->elements.size()) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@ARRAY " + std::to_wstring(array_ast->elements.size()) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		break;
 	}
@@ -740,7 +740,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		NewAST* new_ast = ((NewAST*)ast);
 
 		for (int i = new_ast->parameters.size() - 1; i >= 0; i--) {
-			std::string param = create_ir(new_ast->parameters[i], 0);
+			std::wstring param = create_ir(new_ast->parameters[i], 0);
 			append_data(result, param, indentation);
 		}
 
@@ -752,10 +752,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		unsigned int id = class_id[new_ast->class_name];
 
-		std::string parameter_count = std::to_string(new_ast->parameters.size());
+		std::wstring parameter_count = std::to_wstring(new_ast->parameters.size());
 
-		append_data(result, "@NEW " + std::to_string(id) + " (" + new_ast->class_name + ") " + parameter_count +
-			" " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@NEW " + std::to_wstring(id) + L" (" + new_ast->class_name + L") " + parameter_count +
+			L" " + std::to_wstring(ast->line_number), indentation);
 		break;
 	}
 
@@ -768,39 +768,39 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		current_scope = scope_class;
 		current_class = class_ast->name;
 
-		std::string parent_type;
-		if (class_ast->parent_type == "")
-			parent_type = "-1";
+		std::wstring parent_type;
+		if (class_ast->parent_type == L"")
+			parent_type = L"-1";
 		else {
-			parent_type = std::to_string(class_id[class_ast->parent_type]);
+			parent_type = std::to_wstring(class_id[class_ast->parent_type]);
 		}
 
 		current_class = class_ast->name;
 
-		std::string object_type;
+		std::wstring object_type;
 
 		if (ast->type == ast_type::class_ast)
-			object_type = "CLASS";
+			object_type = L"CLASS";
 		else if (ast->type == ast_type::scene_ast)
-			object_type = "SCENE";
+			object_type = L"SCENE";
 		else if (ast->type == ast_type::object_ast)
-			object_type = "OBJECT";
+			object_type = L"OBJECT";
 
 		create_scope();
 		unsigned int id = class_id[class_ast->name];
-		std::string line = object_type + " " + std::to_string(id) + " (" + class_ast->name + ") " + parent_type + " {";
+		std::wstring line = object_type + L" " + std::to_wstring(id) + L" (" + class_ast->name + L") " + parent_type + L" {";
 		append_data(result, line, indentation);
 
 		create_scope();
 
-		line = "$INITIALIZE 0 (constructor) default void {";
+		line = L"$INITIALIZE 0 (constructor) default void {";
 		append_data(result, line, indentation);
 
 		for (int i = 0; i < class_ast->variables.size(); i++) {
 			append_data(result, create_ir(class_ast->variables[i], indentation), 0);
 		}
 
-		line = "}";
+		line = L"}";
 		append_data(result, line, indentation);
 
 		destroy_scope();
@@ -813,14 +813,14 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_ir(constructor_declaration, indentation), 0);
 		}
 
-		line = "}";
+		line = L"}";
 
 		destroy_scope();
 
 		append_data(result, line, indentation);
 
 		current_scope = backup_scope;
-		current_class = "";
+		current_class = L"";
 
 		break;
 	}
@@ -828,25 +828,25 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case constructor_declaration_ast: {
 		ConstructorDeclarationAST* constructor_declaration_ast = (ConstructorDeclarationAST*)ast;
 
-		std::string line = "$CONSTRUCTOR 0 (constructor) " + constructor_declaration_ast->access_modifier + " " + constructor_declaration_ast->return_type + " ";
+		std::wstring line = L"$CONSTRUCTOR 0 (constructor) " + constructor_declaration_ast->access_modifier + L" " + constructor_declaration_ast->return_type + L" ";
 
 		current_scope = scope_local;
 
 		create_scope();
 
-		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+		std::vector<std::unordered_map<std::wstring, Data>>* local_variable_symbol = local_variable_symbols.top();
 
 		for (int i = 0; i < constructor_declaration_ast->parameters.size(); i++) {
-			line += constructor_declaration_ast->parameters[i]->names[0] + " ";
-			line += constructor_declaration_ast->parameters[i]->var_types[0] + " ";
+			line += constructor_declaration_ast->parameters[i]->names[0] + L" ";
+			line += constructor_declaration_ast->parameters[i]->var_types[0] + L" ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
-		line += "{";
+		line += L"{";
 
 		append_data(result, line, indentation);
 
@@ -854,7 +854,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			append_data(result, create_ir(constructor_declaration_ast->body[i], indentation), 0);
 		}
 
-		append_data(result, "}", indentation);
+		append_data(result, L"}", indentation);
 
 		destroy_scope();
 
@@ -865,7 +865,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case function_declaration_ast: {
 		FunctionDeclarationAST* function_declaration_ast = ((FunctionDeclarationAST*)ast);
 
-		std::string function_name = function_declaration_ast->function_name;
+		std::wstring function_name = function_declaration_ast->function_name;
 
 		unsigned int id = 0;
 
@@ -891,30 +891,30 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		create_scope();
 
-		std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+		std::vector<std::unordered_map<std::wstring, Data>>* local_variable_symbol = local_variable_symbols.top();
 
-		std::string line = "FUNC " + std::to_string(id) + " (" + function_name + ") ";
+		std::wstring line = L"FUNC " + std::to_wstring(id) + L" (" + function_name + L") ";
 
-		line += function_declaration_ast->access_modifier + " " + function_declaration_ast->return_type + " ";
+		line += function_declaration_ast->access_modifier + L" " + function_declaration_ast->return_type + L" ";
 
 		for (int i = 0; i < function_declaration_ast->parameters.size(); i++) {
-			line += function_declaration_ast->parameters[i]->names[0] + " ";
-			line += function_declaration_ast->parameters[i]->var_types[0] + " ";
+			line += function_declaration_ast->parameters[i]->names[0] + L" ";
+			line += function_declaration_ast->parameters[i]->var_types[0] + L" ";
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
-		line += " {\n";
+		line += L" {\n";
 
 		for (BaseAST* ast : function_declaration_ast->body) {
-			std::string body = create_ir(ast, indentation + 1);
+			std::wstring body = create_ir(ast, indentation + 1);
 			append_data(line, body, 0);
 		}
 
-		line += "}";
+		line += L"}";
 
 		append_data(result, line, 0);
 
@@ -927,9 +927,9 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 	case string_literal_ast: {
 		StringLiteralAST* string_literal_ast = ((StringLiteralAST*)ast);
-		std::string str_literal = string_literal_ast->str_literal;
+		std::wstring str_literal = string_literal_ast->str_literal;
 
-		std::string line = "@PUSH_STRING " + str_literal + " " + std::to_string(ast->line_number);
+		std::wstring line = L"@PUSH_STRING " + str_literal + L" " + std::to_wstring(ast->line_number);
 
 		append_data(result, line, 0);
 		break;
@@ -938,8 +938,8 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case bool_ast: {
 		BoolAST* bool_ast = (BoolAST*)ast;
 
-		std::string bool_data = (bool_ast->bool_data ? "true" : "false");
-		std::string line = "@PUSH_BOOL " + bool_data + " " + std::to_string(ast->line_number);
+		std::wstring bool_data = (bool_ast->bool_data ? L"true" : L"false");
+		std::wstring line = L"@PUSH_BOOL " + bool_data + L" " + std::to_wstring(ast->line_number);
 
 		append_data(result, line, 0);
 
@@ -956,9 +956,9 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case number_ast: {
 		NumberAST* number_ast = ((NumberAST*)ast);
 
-		std::string number = number_ast->number_string;
+		std::wstring number = number_ast->number_string;
 
-		std::string line = "@PUSH_NUMBER " + number + " " + std::to_string(ast->line_number);
+		std::wstring line = L"@PUSH_NUMBER " + number + L" " + std::to_wstring(ast->line_number);
 
 		append_data(result, line, indentation);
 		break;
@@ -979,7 +979,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		label_id++;
 		int block_id = label_id;
 		if (if_statement_ast->statement_type != statement_else) {
-			append_data(result, "@IF " + integer_to_hex(block_id) + " " + std::to_string(ast->line_number), indentation);
+			append_data(result, L"@IF " + integer_to_hex(block_id) + L" " + std::to_wstring(ast->line_number), indentation);
 		}
 
 		local_variable_symbols.top()->push_back({});
@@ -991,10 +991,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		local_variable_symbols.top()->erase(local_variable_symbols.top()->begin() + local_variable_symbols.top()->size() - 1);
 
 		// as the if statement ends terminate the entire statement
-		append_data(result, "@GOTO " + integer_to_hex(end_label_count) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@GOTO " + integer_to_hex(end_label_count) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		if (if_statement_ast->statement_type != statement_else) {
-			append_data(result, "@LABEL " + integer_to_hex(block_id) + " " + std::to_string(ast->line_number), indentation);
+			append_data(result, L"@LABEL " + integer_to_hex(block_id) + L" " + std::to_wstring(ast->line_number), indentation);
 		}
 
 #pragma endregion 
@@ -1004,7 +1004,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		}
 
 		// end the if statement label
-		append_data(result, "@LABEL " + integer_to_hex(end_label_count) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@LABEL " + integer_to_hex(end_label_count) + L" " + std::to_wstring(ast->line_number), indentation);
 		break;
 	}
 
@@ -1020,9 +1020,9 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		label_id++;
 		int begin_label_id = label_id;
 
-		append_data(result, "@GOTO " + integer_to_hex(end_label_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@GOTO " + integer_to_hex(end_label_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
-		append_data(result, "@LABEL " + integer_to_hex(begin_label_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@LABEL " + integer_to_hex(begin_label_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		for (int i = 0; i < for_statement_ast->body.size(); i++) {
 			append_data(result, create_ir(for_statement_ast->body[i], indentation), 0);
@@ -1030,11 +1030,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 		append_data(result, create_ir(for_statement_ast->step, indentation), 0);
 
-		append_data(result, "@LABEL " + integer_to_hex(end_label_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@LABEL " + integer_to_hex(end_label_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		append_data(result, create_ir(for_statement_ast->condition, indentation), indentation);
 
-		append_data(result, "@FOR " + integer_to_hex(begin_label_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@FOR " + integer_to_hex(begin_label_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		local_variable_symbols.top()->erase(local_variable_symbols.top()->begin() + local_variable_symbols.top()->size() - 1);
 
@@ -1052,19 +1052,19 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		label_id++;
 		int condition_id = label_id;
 
-		append_data(result, "@GOTO " + integer_to_hex(condition_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@GOTO " + integer_to_hex(condition_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
-		append_data(result, "@LABEL " + integer_to_hex(begin_id) + " " + std::to_string(ast->line_number), 0);
+		append_data(result, L"@LABEL " + integer_to_hex(begin_id) + L" " + std::to_wstring(ast->line_number), 0);
 
 		for (int i = 0; i < while_statement_ast->body.size(); i++) {
 			append_data(result, create_ir(while_statement_ast->body[i], indentation), 0);
 		}
 
-		append_data(result, "@LABEL " + integer_to_hex(condition_id) + " " + std::to_string(ast->line_number), 0);
+		append_data(result, L"@LABEL " + integer_to_hex(condition_id) + L" " + std::to_wstring(ast->line_number), 0);
 
 		append_data(result, create_ir(while_statement_ast->condition, indentation), indentation);
 
-		append_data(result, "@FOR " + integer_to_hex(begin_id) + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@FOR " + integer_to_hex(begin_id) + L" " + std::to_wstring(ast->line_number), indentation);
 
 		local_variable_symbols.top()->erase(local_variable_symbols.top()->begin() + local_variable_symbols.top()->size() - 1);
 		break;
@@ -1072,10 +1072,10 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 	case return_ast: {
 		ReturnAST* return_ast = ((ReturnAST*)ast);
-		std::string expr = create_ir(return_ast->expression, indentation);
+		std::wstring expr = create_ir(return_ast->expression, indentation);
 		append_data(result, expr, indentation);
 
-		std::string line = "@RET " + std::to_string(ast->line_number);
+		std::wstring line = L"@RET " + std::to_wstring(ast->line_number);
 		append_data(result, line, indentation);
 		break;
 	}
@@ -1086,56 +1086,56 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		for (int i = 0; i < variable_declaration_ast->var_count; i++) {
 
 			if (variable_declaration_ast->declarations[i] != nullptr) {
-				std::string param = create_ir(variable_declaration_ast->declarations[i], 0);
+				std::wstring param = create_ir(variable_declaration_ast->declarations[i], 0);
 				append_data(result, param, indentation);
 			}
 			else {
-				if (variable_declaration_ast->var_types[i] == "number") {
-					append_data(result, "@PUSH_NUMBER 0" + std::to_string(ast->line_number), indentation);
+				if (variable_declaration_ast->var_types[i] == L"number") {
+					append_data(result, L"@PUSH_NUMBER 0" + std::to_wstring(ast->line_number), indentation);
 				}
 				else {
-					append_data(result, "@PUSH_NULL " + std::to_string(ast->line_number), indentation);
+					append_data(result, L"@PUSH_NULL " + std::to_wstring(ast->line_number), indentation);
 				}
 			}
 
-			std::string store_type = "";
+			std::wstring store_type = L"";
 			unsigned int id = 0;
 
-			std::string type = variable_declaration_ast->var_types[i];
+			std::wstring type = variable_declaration_ast->var_types[i];
 
-			if (variable_declaration_ast->array_var_types[i] != "")
+			if (variable_declaration_ast->array_var_types[i] != L"")
 				type = variable_declaration_ast->array_var_types[i];
 
 			switch (current_scope) {
 			case scope_global:
-				store_type = "@STORE_GLOBAL";
+				store_type = L"@STORE_GLOBAL";
 				id = (unsigned int)global_variable_symbol.size();
 				global_variable_symbol.insert(std::make_pair(variable_declaration_ast->names[i],
-					Data{ id, type, variable_declaration_ast->array_var_types[i] != "" }
+					Data{ id, type, variable_declaration_ast->array_var_types[i] != L"" }
 				));
 				break;
 			case scope_local: {
-				std::vector<std::unordered_map<std::string, Data>>* local_variable_symbol = local_variable_symbols.top();
+				std::vector<std::unordered_map<std::wstring, Data>>* local_variable_symbol = local_variable_symbols.top();
 
-				store_type = "@STORE_LOCAL";
+				store_type = L"@STORE_LOCAL";
 				id = generate_local_variable_id(local_variable_symbol);
 
 				local_variable_symbol->at(local_variable_symbol->size() - 1).insert(std::make_pair(variable_declaration_ast->names[i],
 					Data{ id,  type,
-					variable_declaration_ast->array_var_types[i] != "" }));
+					variable_declaration_ast->array_var_types[i] != L"" }));
 
 				break;
 			}
 			case scope_class:
-				store_type = "@STORE_CLASS";
+				store_type = L"@STORE_CLASS";
 
 				id = get_parent_member_variable_size(current_class) + member_variable_data[current_class][variable_declaration_ast->names[i]].id;
 
 				break;
 			}
 
-			std::string line = store_type + " " + std::to_string(id)
-				+ " (" + variable_declaration_ast->names[i] + ") " + std::to_string(ast->line_number);
+			std::wstring line = store_type + L" " + std::to_wstring(id)
+				+ L" (" + variable_declaration_ast->names[i] + L") " + std::to_wstring(ast->line_number);
 
 			append_data(result, line, indentation);
 		}
@@ -1146,7 +1146,7 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case keyboard_ast: {
 		KeyboardAST* keyboard_ast = ((KeyboardAST*)ast);
 
-		append_data(result, "@KEYBOARD " + keyboard_ast->pressed_key + " " + std::to_string(ast->line_number), indentation);
+		append_data(result, L"@KEYBOARD " + keyboard_ast->pressed_key + L" " + std::to_wstring(ast->line_number), indentation);
 
 		break;
 	}
@@ -1154,125 +1154,125 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 	case bin_expr_ast: {
 		BinExprAST* bin_expr_ast = ((BinExprAST*)ast);
 
-		if (bin_expr_ast->oper == "=") {
+		if (bin_expr_ast->oper == L"=") {
 			append_data(result, create_assign_ir(ast, indentation), 0);
 		}
-		else if (bin_expr_ast->oper == "++" || bin_expr_ast->oper == "--") {
+		else if (bin_expr_ast->oper == L"++" || bin_expr_ast->oper == L"--") {
 
-			std::string rhs = create_ir(new NumberAST("1"), indentation);
+			std::wstring rhs = create_ir(new NumberAST(L"1"), indentation);
 			append_data(result, rhs, 0);
 
-			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
 			append_data(result, lhs, 0);
 
-			std::string oper = "";
+			std::wstring oper = L"";
 
-			if (bin_expr_ast->oper == "++")
-				oper = "@ADD";
-			else if (bin_expr_ast->oper == "--")
-				oper = "@SUB";
+			if (bin_expr_ast->oper == L"++")
+				oper = L"@ADD";
+			else if (bin_expr_ast->oper == L"--")
+				oper = L"@SUB";
 
-			oper += " " + std::to_string(ast->line_number);
+			oper += L" " + std::to_wstring(ast->line_number);
 			append_data(result, oper, indentation);
 
 			bin_expr_ast->rhs = nullptr;
 			append_data(result, create_assign_ir(bin_expr_ast, indentation), indentation);
 		}
-		else if (bin_expr_ast->oper == ">" ||
-			bin_expr_ast->oper == "<" ||
-			bin_expr_ast->oper == ">=" ||
-			bin_expr_ast->oper == "<=" ||
-			bin_expr_ast->oper == "==" ||
-			bin_expr_ast->oper == "!=" ||
-			bin_expr_ast->oper == "||" ||
-			bin_expr_ast->oper == "&&") {
+		else if (bin_expr_ast->oper == L">" ||
+			bin_expr_ast->oper == L"<" ||
+			bin_expr_ast->oper == L">=" ||
+			bin_expr_ast->oper == L"<=" ||
+			bin_expr_ast->oper == L"==" ||
+			bin_expr_ast->oper == L"!=" ||
+			bin_expr_ast->oper == L"||" ||
+			bin_expr_ast->oper == L"&&") {
 
-			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
 			append_data(result, lhs, 0);
 
-			std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
+			std::wstring rhs = create_ir(bin_expr_ast->rhs, indentation);
 			append_data(result, rhs, 0);
 
-			std::string oper = "";
+			std::wstring oper = L"";
 
-			if (bin_expr_ast->oper == ">")
-				oper = "@LESSER";
-			else if (bin_expr_ast->oper == "<")
-				oper = "@GREATER";
-			else if (bin_expr_ast->oper == ">=")
-				oper = "@EQ_LESSER";
-			else if (bin_expr_ast->oper == "<=")
-				oper = "@EQ_GREATER";
-			else if (bin_expr_ast->oper == "==")
-				oper = "@EQUAL";
-			else if (bin_expr_ast->oper == "!=")
-				oper = "@NOT_EQUAL";
-			else if (bin_expr_ast->oper == "||")
-				oper = "@OR";
-			else if (bin_expr_ast->oper == "&&")
-				oper = "@AND";
+			if (bin_expr_ast->oper == L">")
+				oper = L"@LESSER";
+			else if (bin_expr_ast->oper == L"<")
+				oper = L"@GREATER";
+			else if (bin_expr_ast->oper == L">=")
+				oper = L"@EQ_LESSER";
+			else if (bin_expr_ast->oper == L"<=")
+				oper = L"@EQ_GREATER";
+			else if (bin_expr_ast->oper == L"==")
+				oper = L"@EQUAL";
+			else if (bin_expr_ast->oper == L"!=")
+				oper = L"@NOT_EQUAL";
+			else if (bin_expr_ast->oper == L"||")
+				oper = L"@OR";
+			else if (bin_expr_ast->oper == L"&&")
+				oper = L"@AND";
 
-			oper += " " + std::to_string(ast->line_number);
+			oper += L" " + std::to_wstring(ast->line_number);
 
 			append_data(result, oper, indentation);
 		}
-		else if (bin_expr_ast->oper == "+=" ||
-			bin_expr_ast->oper == "-=" ||
-			bin_expr_ast->oper == "*=" ||
-			bin_expr_ast->oper == "/=" ||
-			bin_expr_ast->oper == "^=" ||
-			bin_expr_ast->oper == "%=") {
+		else if (bin_expr_ast->oper == L"+=" ||
+			bin_expr_ast->oper == L"-=" ||
+			bin_expr_ast->oper == L"*=" ||
+			bin_expr_ast->oper == L"/=" ||
+			bin_expr_ast->oper == L"^=" ||
+			bin_expr_ast->oper == L"%=") {
 
-			std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
+			std::wstring rhs = create_ir(bin_expr_ast->rhs, indentation);
 			append_data(result, rhs, 0);
 
-			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
 			append_data(result, lhs, 0);
 
-			std::string oper = "";
+			std::wstring oper = L"";
 
-			if (bin_expr_ast->oper == "+=")
-				oper = "@ADD";
-			else if (bin_expr_ast->oper == "-=")
-				oper = "@SUB";
-			else if (bin_expr_ast->oper == "*=")
-				oper = "@MUL";
-			else if (bin_expr_ast->oper == "/=")
-				oper = "@DIV";
-			else if (bin_expr_ast->oper == "%=")
-				oper = "@MOD";
-			else if (bin_expr_ast->oper == "^=")
-				oper = "@POW";
+			if (bin_expr_ast->oper == L"+=")
+				oper = L"@ADD";
+			else if (bin_expr_ast->oper == L"-=")
+				oper = L"@SUB";
+			else if (bin_expr_ast->oper == L"*=")
+				oper = L"@MUL";
+			else if (bin_expr_ast->oper == L"/=")
+				oper = L"@DIV";
+			else if (bin_expr_ast->oper == L"%=")
+				oper = L"@MOD";
+			else if (bin_expr_ast->oper == L"^=")
+				oper = L"@POW";
 
-			oper += " " + std::to_string(ast->line_number);
+			oper += L" " + std::to_wstring(ast->line_number);
 			append_data(result, oper, indentation);
 
 			bin_expr_ast->rhs = nullptr;
 			append_data(result, create_assign_ir(bin_expr_ast, indentation), indentation);
 		}
 		else {
-			std::string oper = "";
+			std::wstring oper = L"";
 
-			std::string lhs = create_ir(bin_expr_ast->lhs, indentation);
+			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
 			append_data(result, lhs, 0);
 
-			std::string rhs = create_ir(bin_expr_ast->rhs, indentation);
+			std::wstring rhs = create_ir(bin_expr_ast->rhs, indentation);
 			append_data(result, rhs, 0);
 
-			if (bin_expr_ast->oper == "+")
-				oper = "@ADD";
-			else if (bin_expr_ast->oper == "-")
-				oper = "@SUB";
-			else if (bin_expr_ast->oper == "*")
-				oper = "@MUL";
-			else if (bin_expr_ast->oper == "/")
-				oper = "@DIV";
-			else if (bin_expr_ast->oper == "%")
-				oper = "@MOD";
-			else if (bin_expr_ast->oper == "^")
-				oper = "@POW";
+			if (bin_expr_ast->oper == L"+")
+				oper = L"@ADD";
+			else if (bin_expr_ast->oper == L"-")
+				oper = L"@SUB";
+			else if (bin_expr_ast->oper == L"*")
+				oper = L"@MUL";
+			else if (bin_expr_ast->oper == L"/")
+				oper = L"@DIV";
+			else if (bin_expr_ast->oper == L"%")
+				oper = L"@MOD";
+			else if (bin_expr_ast->oper == L"^")
+				oper = L"@POW";
 
-			oper += " " + std::to_string(ast->line_number);
+			oper += L" " + std::to_wstring(ast->line_number);
 
 			append_data(result, oper, 0);
 		}
@@ -1282,23 +1282,23 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 
 	case function_call_ast: {
 		FunctionCallAST* function_call_ast = ((FunctionCallAST*)ast);
-		std::string function_name = function_call_ast->function_name;
+		std::wstring function_name = function_call_ast->function_name;
 
-		if (function_name == "super") {
+		if (function_name == L"super") {
 			create_super_call(ast, result, indentation);
 			break;
 		}
 
 		unsigned int function_id = -1;
-		std::string call_type = "";
+		std::wstring call_type = L"";
 
 		scopes scope = get_scope_of_function(function_name, function_call_ast->line_number);
 
 		if (scope == scope_class) { // call function in current class.
 			function_id = member_function_data[current_class][function_name].id;
-			call_type = "@CALL_CLASS";
+			call_type = L"@CALL_CLASS";
 
-			bool able_to_access = member_function_data[current_class][function_name].access_modifier != "private";
+			bool able_to_access = member_function_data[current_class][function_name].access_modifier != L"private";
 
 			if (!able_to_access) {
 				std::wstring w_name;
@@ -1310,11 +1310,11 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 		}
 		else if (exist_in_symbol_table(global_function_symbol, function_name)) { // call function in global area.
 			function_id = global_function_symbol[function_name];
-			call_type = "@CALL_GLOBAL";
+			call_type = L"@CALL_GLOBAL";
 		}
 		else if (exist_in_symbol_table(builtin_function_symbol, function_name)) { // call function in builtin area.
 			function_id = builtin_function_symbol[function_name];
-			call_type = "@CALL_BUILTIN";
+			call_type = L"@CALL_BUILTIN";
 		}
 		else {
 			std::wstring w_function_name;
@@ -1322,12 +1322,12 @@ const std::string create_ir(BaseAST* ast, int indentation) {
 			CHESTNUT_THROW_ERROR(L"Failed to find Function : " + w_function_name, "FAILED_TO_FIND_FUNCTION", "005", ast->line_number);
 		}
 
-		std::string line = call_type + " " + std::to_string(function_id)
-			+ " (" + function_name + ") " + std::to_string(function_call_ast->parameters.size())
-			+ " " + std::to_string(ast->line_number);
+		std::wstring line = call_type + L" " + std::to_wstring(function_id)
+			+ L" (" + function_name + L") " + std::to_wstring(function_call_ast->parameters.size())
+			+ L" " + std::to_wstring(ast->line_number);
 
 		for (int i = function_call_ast->parameters.size() - 1; i >= 0; i--) {
-			std::string param = create_ir(function_call_ast->parameters[i], 0);
+			std::wstring param = create_ir(function_call_ast->parameters[i], 0);
 			append_data(result, param, indentation);
 		}
 
