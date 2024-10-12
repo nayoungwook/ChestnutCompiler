@@ -39,6 +39,7 @@ enum ast_type {
 	keyboard_ast = 28,
 	load_ast = 29,
 	font_ast = 30,
+	option_ast = 31,
 };
 
 class BaseAST {
@@ -132,6 +133,15 @@ public:
 	std::wstring path, name;
 	FontAST(std::wstring const& name, std::wstring const& path) : path(path), name(name) {
 		type = font_ast;
+	};
+};
+
+class OptionAST : public BaseAST {
+private:
+public:
+	std::wstring option_name;
+	OptionAST(std::wstring const& option_name) : option_name(option_name) {
+		type = option_ast;
 	};
 };
 

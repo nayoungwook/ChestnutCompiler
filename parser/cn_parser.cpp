@@ -89,7 +89,7 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 
 		if (_cur_node->type == number_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
 			|| _cur_node->type == new_ast || _cur_node->type == character_ast || _cur_node->type == bool_ast || _cur_node->type == keyboard_ast
-			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast) {
+			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast) {
 			result.push_back(_cur_node);
 			continue;
 		}
@@ -1224,25 +1224,37 @@ VectorDeclarationAST* create_vector_declaration_ast(std::vector<Token*>& tokens)
 CastAST* create_cast_ast(std::vector<Token*>& tokens) {
 	CastAST* result = nullptr;
 
-	pull_token_and_expect(tokens, tok_l_paren);
 	Token* type = pull_token_and_expect(tokens, -1);
 	pull_token_and_expect(tokens, tok_r_paren);
 
 	std::vector<Token*> expr_tokens;
-	Token* cur_token = check_token(tokens);
 
-	while (cur_token->type != tok_semi_colon && !tokens.empty()) {
-		expr_tokens.push_back(pull_token_and_expect(tokens, -1));
-		cur_token = check_token(tokens);
+	BaseAST* target_ast = nullptr;
+
+	if (check_token(tokens)->type == tok_l_paren) {
+		int paren_count = 0;
+
+		do {
+			Token* tok = pull_token_and_expect(tokens, -1);
+
+			if (tok->type == tok_l_paren) paren_count++;
+			if (tok->type == tok_r_paren) paren_count--;
+
+			expr_tokens.push_back(tok);
+
+		} while (paren_count != 0);
+
+		std::vector<BaseAST*> expr_asts;
+
+		while (!expr_tokens.empty()) {
+			expr_asts.push_back(parse(expr_tokens));
+		}
+
+		target_ast = create_expr_ast(expr_asts);
 	}
-
-	std::vector<BaseAST*> expr_asts;
-
-	while (!expr_tokens.empty()) {
-		expr_asts.push_back(parse(expr_tokens));
+	else {
+		target_ast = parse(tokens);
 	}
-
-	BaseAST* target_ast = create_expr_ast(expr_asts);
 
 	result = new CastAST(type->identifier, target_ast);
 
@@ -1267,6 +1279,14 @@ FontAST* create_font_ast(std::vector<Token*>& tokens) {
 	std::wstring path = pull_token_and_expect(tokens, tok_string_identifier)->identifier;
 
 	result = new FontAST(name, path);
+
+	return result;
+}
+
+OptionAST* create_option_ast(std::wstring const& option_name, std::vector<Token*>& tokens) {
+	OptionAST* result = nullptr;
+
+	result = new OptionAST(option_name.substr(1, option_name.length() - 1));
 
 	return result;
 }
@@ -1313,6 +1333,9 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		else {
 			// error, it is not character
 		}
+	}
+	else if (first_token->type == tok_l_paren) {
+		result = create_cast_ast(tokens);
 	}
 	else if (first_token->type == tok_cast) {
 		result = create_cast_ast(tokens);
@@ -1388,6 +1411,9 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 	else if (first_token->type == tok_l_bracket) {
 		result = create_array_declaration_ast(tokens);
 	}
+	else if (first_token->type == tok_option) {
+		result = create_option_ast(first_token->identifier, tokens);
+	}
 
 	if (check_token(tokens)->type == tok_dot) {
 		tokens.erase(tokens.begin());
@@ -1407,9 +1433,14 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 
 	if (result == nullptr) {
 		Token* tok = check_token(tokens);
-		//		new UnexpectedTokenError(tok->identifier, "?", tok->line);
+		CHESTNUT_THROW_ERROR(L"Unexpected token pulled : " + tok->identifier, "UNEXPECTED_TOKEN_ERROR", "0x12", tok->line);
 	}
+
 	result->line_number = first_token->line;
+
+	if (check_token(tokens)->type == tok_semi_colon) {
+		pull_token_and_expect(tokens, tok_semi_colon);
+	}
 
 	return result;
 }

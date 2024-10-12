@@ -313,6 +313,9 @@ std::vector<Token*> tokenize(std::wstring line, int line_number) {
 					type = tok_load;
 				else if (identifier == L"#font")
 					type = tok_font;
+				else {
+					type = tok_option;
+				}
 			}
 
 		}

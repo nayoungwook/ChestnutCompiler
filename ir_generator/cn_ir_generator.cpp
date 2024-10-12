@@ -682,6 +682,13 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 
 	switch (ast->type) {
 
+	case option_ast: {
+		OptionAST* option_ast = (OptionAST*)ast;
+
+		append_data(result, L"#OPTION " + option_ast->option_name + L" " + std::to_wstring(ast->line_number) + L"\n", indentation);
+		break;
+	}
+
 	case import_ast: {
 		ImportAST* import_ast = (ImportAST*)ast;
 		append_data(result, L"#IMPORT " + import_ast->import_type + L" " + std::to_wstring(ast->line_number) + L"\n", indentation);
@@ -934,6 +941,19 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		append_data(result, line, 0);
 		break;
 	};
+
+	case cast_ast: {
+		CastAST* cast_ast = (CastAST*)ast;
+
+		std::wstring content_ast = create_ir(cast_ast->target_ast, 0);
+		append_data(result, content_ast, indentation);
+
+		std::wstring line = L"@CAST " + cast_ast->cast_type + L" " + std::to_wstring(ast->line_number);
+
+		append_data(result, line, indentation);
+
+		break;
+	}
 
 	case bool_ast: {
 		BoolAST* bool_ast = (BoolAST*)ast;
