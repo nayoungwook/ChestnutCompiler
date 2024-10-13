@@ -614,9 +614,10 @@ int get_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* a
 			std::unordered_map<std::wstring, Data> found_area = area->at(i);
 
 			for (area_iterator = found_area.begin(); area_iterator != found_area.end(); area_iterator++) {
-				if (area_iterator->first == obj_identifier) break;
-
-				result++;
+				if (area_iterator->first == obj_identifier) {
+					result += area_iterator->second.id;
+					break;
+				}
 			}
 			return result;
 		}
@@ -849,7 +850,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
-					Data{ (unsigned int)local_variable_symbol->size(), constructor_declaration_ast->parameters[i]->var_types[0] }
+					Data{ (unsigned int)i,constructor_declaration_ast->parameters[i]->var_types[0] }
 				));
 		}
 
@@ -910,7 +911,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
-					Data{ (unsigned int)local_variable_symbol->size(), function_declaration_ast->parameters[i]->var_types[0] }
+					Data{ (unsigned int)i,	function_declaration_ast->parameters[i]->var_types[0] }
 				));
 		}
 
