@@ -1237,8 +1237,14 @@ CastAST* create_cast_ast(std::vector<Token*>& tokens) {
 		do {
 			Token* tok = pull_token_and_expect(tokens, -1);
 
-			if (tok->type == tok_l_paren) paren_count++;
-			if (tok->type == tok_r_paren) paren_count--;
+			if (tok->type == tok_l_paren) {
+				paren_count++;
+				if (paren_count == 1) continue;
+			}
+			if (tok->type == tok_r_paren) {
+				paren_count--;
+				if (paren_count == 0) continue;
+			}
 
 			expr_tokens.push_back(tok);
 

@@ -34,6 +34,7 @@ void declare_builtin_functions() {
 	builtin_function_symbol.insert(std::make_pair(L"random_range", 11));
 	builtin_function_symbol.insert(std::make_pair(L"sqrt", 12));
 	builtin_function_symbol.insert(std::make_pair(L"text", 13));
+	builtin_function_symbol.insert(std::make_pair(L"color", 14));
 }
 
 void declare_builtin_variables() {
@@ -42,6 +43,10 @@ void declare_builtin_variables() {
 
 	Data mouse_data = { 1, L"vector", false };
 	global_variable_symbol.insert(std::make_pair(L"mouse", mouse_data));
+
+	Data fps_data = { 2, L"number", false };
+	global_variable_symbol.insert(std::make_pair(L"fps", fps_data));
+
 }
 
 void create_scope() {

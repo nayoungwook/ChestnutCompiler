@@ -58,6 +58,22 @@ int main(int argc, char* args[]) {
 
 		compile_imported_file(L"main");
 	}
+	else if (argc == 2) {
+		if (!strcmp("-credits-fuck", args[1])) {
+			std::wcout << L"Chsetnut Programming language" << std::endl;
+			std::wcout << L"ÄÚµå ½Ñ °³»õ³¢ - ³ª¿µ¿í" << std::endl;
+			std::wcout << L"ÈÆ¼ö µÐ ¾¾¹ß·Ò - ±èÁØ¼­" << std::endl;
+			std::wcout << L"±×¸² ±×¸° ¹ÌÄ£³ð - ¹Ú¼¼Çö" << std::endl;
+		}
+		else if (!strcmp("-credits", args[1])) {
+			std::wcout << L"ÇÒ¸Ó´Ï¿¡°Ô" << std::endl;
+
+			std::wcout << L"Chsetnut Programming language" << std::endl;
+			std::wcout << L"Developed by NaYoungWook" << std::endl;
+			std::wcout << L"Special thanks to KimJunSeo" << std::endl;
+			std::wcout << L"Logo pic by ParkSehyun" << std::endl;
+		}
+	}
 	else if (argc == 3) {
 		if (!strcmp("-compile", args[1])) {
 			std::string file_name = args[2];
