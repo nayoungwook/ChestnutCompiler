@@ -626,7 +626,6 @@ int get_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* a
 			}
 			return result;
 		}
-		result += area->at(i).size();
 	}
 	return -1;
 }
