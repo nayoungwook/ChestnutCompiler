@@ -153,6 +153,7 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 				continue;
 			}
 		}
+
 		modified_nodes.push_back(nodes[i]);
 	}
 
@@ -893,7 +894,6 @@ ReturnAST* create_return_ast(std::vector<Token*>& tokens) {
 
 	BaseAST* declaration_ast = create_expr_ast(declaration_asts);
 
-
 	return new ReturnAST(declaration_ast);
 }
 
@@ -1339,12 +1339,6 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		else {
 			// error, it is not character
 		}
-	}
-	else if (first_token->type == tok_l_paren) {
-		result = create_cast_ast(tokens);
-	}
-	else if (first_token->type == tok_cast) {
-		result = create_cast_ast(tokens);
 	}
 	else if (first_token->type == tok_true || first_token->type == tok_false) {
 		result = new BoolAST(first_token->identifier == L"true");
