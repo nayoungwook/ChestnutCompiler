@@ -75,9 +75,12 @@ scopes get_scope_of_identifier(std::wstring const& identifier, BaseAST* identifi
 	}
 	else {
 		if (id == -1) {
-
 			if (member_variable_data.find(current_class) != member_variable_data.end()
 				&& member_variable_data[current_class].find(identifier) != member_variable_data[current_class].end()) {
+				return scope_class;
+			}
+			else if (member_variable_data.find(attr_target_class) != member_variable_data.end()
+				&& member_variable_data[attr_target_class].find(identifier) != member_variable_data[attr_target_class].end()) {
 				return scope_class;
 			}
 			else {
@@ -220,9 +223,10 @@ Data get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast) {
 	}
 	else if (scope == scope_class) {
 		Data result;
-		result.id = member_variable_data[current_class][identifier].id;
-		result.type = member_variable_data[current_class][identifier].type;
-		result.is_array = member_variable_data[current_class][identifier].is_array;
+		
+		result.id = member_variable_data[attr_target_class][identifier].id;
+		result.type = member_variable_data[attr_target_class][identifier].type;
+		result.is_array = member_variable_data[attr_target_class][identifier].is_array;
 
 		return result;
 	}
@@ -256,6 +260,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 		ClassAST* class_ast_searcher = parsed_class_data[type];
 
 		while (true) {
+
 			if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
 				member_variable.id
 					= member_variable_data[class_ast_searcher->name][searcher->identifier].id + get_parent_member_variable_size(class_ast_searcher->name);
@@ -465,6 +470,8 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 		std::wstring type = get_type_of_attr_target(attr_target);
 		bool is_array = is_attr_target_array(attr_target);
 
+		attr_target_class = type;
+
 		//append attribute data.
 		if (searcher->type == ast_type::identifier_ast) {
 			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
@@ -498,6 +505,8 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 
 		attr_target = searcher;
 	}
+
+	attr_target_class = current_class;
 
 	return result;
 }
@@ -779,6 +788,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		scopes backup_scope = current_scope;
 		current_scope = scope_class;
 		current_class = class_ast->name;
+		attr_target_class = class_ast->name;
 
 		std::wstring parent_type;
 		if (class_ast->parent_type == L"")
@@ -786,8 +796,6 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		else {
 			parent_type = std::to_wstring(class_id[class_ast->parent_type]);
 		}
-
-		current_class = class_ast->name;
 
 		std::wstring object_type;
 
@@ -855,7 +863,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)i,constructor_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += L"{";
@@ -916,7 +924,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)i,	function_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += L" {\n";
@@ -1172,7 +1180,6 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		KeyboardAST* keyboard_ast = ((KeyboardAST*)ast);
 
 		append_data(result, L"@KEYBOARD " + keyboard_ast->pressed_key + L" " + std::to_wstring(ast->line_number), indentation);
-
 		break;
 	}
 

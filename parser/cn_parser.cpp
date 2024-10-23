@@ -179,30 +179,38 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 	std::stack<BaseAST*> ast_stack;
 
 	BaseAST* result = nullptr;
-
 	/*
 	for (int i = 0; i < postfix_result.size(); i++) {
 		if (postfix_result[i]->type == number_ast) {
-			std::cout << ((NumberAST*)postfix_result[i])->number_string << " ";
+			std::wcout << ((NumberAST*)postfix_result[i])->number_string << " ";
 		}
 		else if (postfix_result[i]->type == identifier_ast) {
-			std::cout << ((IdentifierAST*)postfix_result[i])->identifier << " ";
+			std::wcout << ((IdentifierAST*)postfix_result[i])->identifier << " ";
 		}
 		else if (postfix_result[i]->type == string_literal_ast) {
-			std::cout << ((StringLiteralAST*)postfix_result[i])->str_literal << " ";
+			std::wcout << ((StringLiteralAST*)postfix_result[i])->str_literal << " ";
 		}
 		else if (postfix_result[i]->type == operator_ast) {
-			std::cout << ((OperatorAST*)postfix_result[i])->oper << " ";
+			std::wcout << ((OperatorAST*)postfix_result[i])->oper << " ";
+		}
+		else if (postfix_result[i]->type == keyboard_ast) {
+			std::wcout << ((KeyboardAST*)postfix_result[i])->pressed_key << " ";
 		}
 	}
 	*/
 
 	for (int i = 0; i < postfix_result.size(); i++) {
 		if (postfix_result[i]->type == operator_ast) {
-			BaseAST* lhs, * rhs;
-			lhs = ast_stack.top(); ast_stack.pop();
-			rhs = ast_stack.top(); ast_stack.pop();
+			BaseAST* lhs = nullptr, * rhs = nullptr;
 
+			if (!ast_stack.empty())
+				lhs = ast_stack.top(); ast_stack.pop();
+			if (!ast_stack.empty())
+				rhs = ast_stack.top(); ast_stack.pop();
+
+			if (lhs == nullptr || rhs == nullptr) {
+				CHESTNUT_THROW_ERROR(L"Failed to create expression due to unknown error", "FAILED_TO_CREATE_EXPRESSION", "0x15", 0);
+			}
 			ast_stack.push(new BinExprAST((dynamic_cast<OperatorAST*>(postfix_result[i])->oper), lhs, rhs));
 		}
 		else {
@@ -210,7 +218,10 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 		}
 	}
 
-	result = ast_stack.top();
+	if (!ast_stack.empty())
+		result = ast_stack.top();
+	else
+		CHESTNUT_THROW_ERROR(L"Failed to create expression due to unknown error", "FAILED_TO_CREATE_EXPRESSION", "0x15", 0);
 
 	return result;
 }
@@ -528,7 +539,6 @@ ArrayReferAST* create_array_refer_ast(std::vector<Token*>& tokens, IdentifierAST
 
 KeyboardAST* create_kb_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
 	KeyboardAST* result = new KeyboardAST(pull_token_and_expect(tokens, -1)->identifier);
-
 	return result;
 }
 
@@ -1224,6 +1234,7 @@ VectorDeclarationAST* create_vector_declaration_ast(std::vector<Token*>& tokens)
 CastAST* create_cast_ast(std::vector<Token*>& tokens) {
 	CastAST* result = nullptr;
 
+	pull_token_and_expect(tokens, tok_l_paren);
 	Token* type = pull_token_and_expect(tokens, -1);
 	pull_token_and_expect(tokens, tok_r_paren);
 
@@ -1392,6 +1403,9 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 		}
 
 		result = _ast;
+	}
+	else if (first_token->type == tok_cast) {
+		result = create_cast_ast(tokens);
 	}
 	else if (first_token->type == tok_return) {
 		result = create_return_ast(tokens);

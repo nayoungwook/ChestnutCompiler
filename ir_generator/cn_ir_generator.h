@@ -39,6 +39,7 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 
 static unsigned int label_id = 0;
 static std::wstring current_class = L"";
+static std::wstring attr_target_class = L"";
 static unsigned int current_class_id = 0;
 
 inline bool exist_in_symbol_table(std::unordered_map<std::wstring, unsigned int> area, std::wstring const& name);
