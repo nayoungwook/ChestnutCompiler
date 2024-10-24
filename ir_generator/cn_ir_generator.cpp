@@ -223,7 +223,7 @@ Data get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast) {
 	}
 	else if (scope == scope_class) {
 		Data result;
-		
+
 		result.id = member_variable_data[attr_target_class][identifier].id;
 		result.type = member_variable_data[attr_target_class][identifier].type;
 		result.is_array = member_variable_data[attr_target_class][identifier].is_array;
@@ -990,8 +990,17 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		NumberAST* number_ast = ((NumberAST*)ast);
 
 		std::wstring number = number_ast->number_string;
+		std::wstring line = L"";
 
-		std::wstring line = L"@PUSH_NUMBER " + number + L" " + std::to_wstring(ast->line_number);
+		if (number[number.size() - 1] == L'f') {
+			line = L"@PUSH_FLOAT " + number + L" " + std::to_wstring(ast->line_number);
+		}
+		else if (std::stoi(number) == std::stod(number)) {
+			line = L"@PUSH_INTEGER " + number + L" " + std::to_wstring(ast->line_number);
+		}
+		else {
+			line = L"@PUSH_NUMBER " + number + L" " + std::to_wstring(ast->line_number);
+		}
 
 		append_data(result, line, indentation);
 		break;
