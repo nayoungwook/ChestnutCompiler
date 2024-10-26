@@ -327,6 +327,14 @@ MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher) {
 		member_function.id = 3;
 		member_function.name = L"set";
 	}
+	else if (searcher->function_name == L"render") {
+		member_function.id = 4;
+		member_function.name = L"render";
+	}
+	else if (searcher->function_name == L"tick") {
+		member_function.id = 5;
+		member_function.name = L"tick";
+	}
 
 	return member_function;
 }
