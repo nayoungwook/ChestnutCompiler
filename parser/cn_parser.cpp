@@ -579,26 +579,32 @@ FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tok
 	std::vector<VariableDeclarationAST*> parameters;
 
 	for (int i = 0; i < parameter_tokens.size(); i++) {
-		std::wstring _type = parameter_tokens[i][2]->identifier;
-		std::wstring _name = parameter_tokens[i][0]->identifier;
+		if (parameter_tokens[i].size() >= 3) {
 
-		std::vector<std::wstring> types = { _type };
-		std::vector<std::wstring> _array_types;
-		std::vector<std::wstring> name = { _name };
+			std::wstring _type = parameter_tokens[i][2]->identifier;
+			std::wstring _name = parameter_tokens[i][0]->identifier;
 
-		if (_type == L"array") {
-			if (parameter_tokens[i].size() > 2)
-				_array_types.push_back(parameter_tokens[i][4]->identifier);
-			else {
-				std::cout << "Error! array should have a type" << std::endl;
-				exit(EXIT_FAILURE);
+			std::vector<std::wstring> types = { _type };
+			std::vector<std::wstring> _array_types;
+			std::vector<std::wstring> name = { _name };
+
+			if (_type == L"array") {
+				if (parameter_tokens[i].size() > 2)
+					_array_types.push_back(parameter_tokens[i][4]->identifier);
+				else {
+					std::cout << "Error! array should have a type" << std::endl;
+					exit(EXIT_FAILURE);
+				}
 			}
+
+			std::vector<BaseAST*> _decl;
+			_decl.push_back(nullptr);
+
+			parameters.push_back(new VariableDeclarationAST(types, name, _decl, _array_types, 1));
 		}
-
-		std::vector<BaseAST*> _decl;
-		_decl.push_back(nullptr);
-
-		parameters.push_back(new VariableDeclarationAST(types, name, _decl, _array_types, 1));
+		else {
+			CHESTNUT_THROW_ERROR(L"Wrong parameter syntax.", "WRONG_PARAMETER_SYNTAX", "0x23", tokens[0]->line);
+		}
 	}
 
 	pull_token_and_expect(tokens, tok_colon);

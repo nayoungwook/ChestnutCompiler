@@ -508,8 +508,10 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 			is_array = member_function.return_type == L"array";
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
+				std::wstring backup_attr_target_class = attr_target_class;
 				std::wstring param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
+				attr_target_class = backup_attr_target_class;
 			}
 
 			append_data(result, L"@CALL_ATTR " + std::to_wstring(member_function.id)
@@ -952,7 +954,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
-					Data{ (unsigned int)i,	function_declaration_ast->parameters[i]->var_types[0] }
+					Data{ generate_local_variable_id(local_variable_symbol),	function_declaration_ast->parameters[i]->var_types[0] }
 				));
 		}
 
@@ -1083,7 +1085,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		ForStatementAST* for_statement_ast = ((ForStatementAST*)ast);
 
 		local_variable_symbols.top()->push_back({});
-
+		
 		append_data(result, create_ir(for_statement_ast->init, indentation), 0);
 
 		label_id++;
