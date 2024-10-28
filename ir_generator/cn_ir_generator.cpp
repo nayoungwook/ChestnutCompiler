@@ -370,7 +370,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstr
 		while (true) {
 			if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
 				member_function.id
-					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
+					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_function_size(class_ast_searcher->name);
 				member_function.name = searcher->function_name;
 				member_function.access_modifier = member_function_data[class_ast_searcher->name][searcher->function_name].access_modifier;
 				member_function.return_type = member_function_data[class_ast_searcher->name][searcher->function_name].return_type;
@@ -894,7 +894,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)i,constructor_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += L"{";
@@ -955,7 +955,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ generate_local_variable_id(local_variable_symbol),	function_declaration_ast->parameters[i]->var_types[0] }
-				));
+			));
 		}
 
 		line += L" {\n";
@@ -1085,7 +1085,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		ForStatementAST* for_statement_ast = ((ForStatementAST*)ast);
 
 		local_variable_symbols.top()->push_back({});
-		
+
 		append_data(result, create_ir(for_statement_ast->init, indentation), 0);
 
 		label_id++;
