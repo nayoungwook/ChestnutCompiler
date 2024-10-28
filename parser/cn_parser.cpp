@@ -644,6 +644,7 @@ void assign_member_variable_data(ClassAST* class_ast, std::unordered_map<std::ws
 
 			if (ast->var_types[j] != L"array") {
 				data.type = ast->var_types[j];
+				data.is_array = false;
 			}
 			else {
 				data.type = ast->array_var_types[j];
@@ -663,6 +664,7 @@ void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_ast
 		MemberFunctionData data;
 		std::wstring name = ast->function_name;
 
+		data.return_type = ast->return_type;
 		data.access_modifier = ast->access_modifier;
 		data.name = name;
 		data.id = i;

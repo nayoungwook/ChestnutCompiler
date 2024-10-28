@@ -155,7 +155,6 @@ std::wstring create_identifier_ir(IdentifierAST* identifier_ast) {
 		if (scope == scope_local) {
 			result = L"@LOAD_LOCAL " + std::to_wstring(get_local_variable_id(local_variable_symbols.top(), identifier_ast->identifier))
 				+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number) + L"\n";
-
 		}
 		else if (scope == scope_class) { // find variable in current class declaration.
 			std::wstring searcher = current_class;
@@ -235,18 +234,18 @@ Data get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast) {
 	}
 }
 
-MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstring const& type, bool is_array) {
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstring const& attr_target_type, bool is_array) {
 	MemberVariableData member_variable;
 	member_variable.id = -1;
 
-	if (parsed_class_data[type] == nullptr && type != L"vector") {
-		std::wcout << L"We don\'t have \"" << type << L"\" as a class. for read member var";
+	if (parsed_class_data[attr_target_type] == nullptr && attr_target_type != L"vector") {
+		std::wcout << L"We don\'t have \"" << attr_target_type << L"\" as a class. for read member var";
 		exit(EXIT_FAILURE);
 	}
 
 	bool found_in_parent_memory = false;
 
-	if (type == L"vector") {
+	if (attr_target_type == L"vector") {
 		if (searcher->identifier == L"x")
 			member_variable.id = 0;
 		else if (searcher->identifier == L"y")
@@ -257,7 +256,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 		member_variable.name = searcher->identifier;
 	}
 	else {
-		ClassAST* class_ast_searcher = parsed_class_data[type];
+		ClassAST* class_ast_searcher = parsed_class_data[attr_target_type];
 
 		while (true) {
 
@@ -267,6 +266,8 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 
 				member_variable.name = searcher->identifier;
 				member_variable.access_modifier = member_variable_data[class_ast_searcher->name][searcher->identifier].access_modifier;
+				member_variable.type = member_variable_data[class_ast_searcher->name][searcher->identifier].type;
+				member_variable.is_array = member_variable_data[class_ast_searcher->name][searcher->identifier].is_array;
 			}
 
 			if (class_ast_searcher->parent_type == L"") break;
@@ -277,20 +278,20 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 
 	if (member_variable.id == -1) {
 		std::wstring w_type;
-		w_type.assign(type.begin(), type.end());
+		w_type.assign(attr_target_type.begin(), attr_target_type.end());
 
 		std::wstring w_member_function;
 		w_member_function.assign(searcher->identifier.begin(), searcher->identifier.end());
 
 		CHESTNUT_THROW_ERROR(L"Failed to find \'" + w_member_function + L"\' in a class \'" + w_type + L"\'", "FAILED_TO_LOAD_VARIABLE_FROM_CLASS", "007", searcher->line_number);
 	}
-	else if (type != L"vector") {
+	else if (attr_target_type != L"vector") {
 		bool able_to_access = true;
 
-		if (type == current_class && found_in_parent_memory) { // tried to access parent class.
+		if (attr_target_type == current_class && found_in_parent_memory) { // tried to access parent class.
 			if (member_variable.access_modifier == L"private") able_to_access = false;
 		}
-		else if (type != current_class) { // tried to access from outside of class.
+		else if (attr_target_type != current_class) { // tried to access from outside of class.
 			if (member_variable.access_modifier != L"public") able_to_access = false;
 		}
 
@@ -314,26 +315,32 @@ MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher) {
 	if (searcher->function_name == L"push") {
 		member_function.id = 0;
 		member_function.name = L"push";
+		member_function.return_type = L"void";
 	}
 	else if (searcher->function_name == L"size") {
 		member_function.id = 1;
 		member_function.name = L"size";
+		member_function.return_type = L"int";
 	}
 	else if (searcher->function_name == L"remove") {
 		member_function.id = 2;
 		member_function.name = L"remove";
+		member_function.return_type = L"void";
 	}
 	else if (searcher->function_name == L"set") {
 		member_function.id = 3;
 		member_function.name = L"set";
+		member_function.return_type = L"void";
 	}
 	else if (searcher->function_name == L"render") {
 		member_function.id = 4;
 		member_function.name = L"render";
+		member_function.return_type = L"void";
 	}
 	else if (searcher->function_name == L"tick") {
 		member_function.id = 5;
 		member_function.name = L"tick";
+		member_function.return_type = L"void";
 	}
 
 	return member_function;
@@ -366,6 +373,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstr
 					= member_function_data[class_ast_searcher->name][searcher->function_name].id + get_parent_member_variable_size(class_ast_searcher->name);
 				member_function.name = searcher->function_name;
 				member_function.access_modifier = member_function_data[class_ast_searcher->name][searcher->function_name].access_modifier;
+				member_function.return_type = member_function_data[class_ast_searcher->name][searcher->function_name].return_type;
 			}
 
 			if (class_ast_searcher->parent_type == L"") break;
@@ -435,8 +443,9 @@ bool is_attr_target_array(BaseAST* attr_target) {
 	if (attr_target->type == ast_type::identifier_ast) {
 		if (((IdentifierAST*)attr_target)->identifier == L"this")
 			is_array = false;
-		else
+		else {
 			is_array = get_data_of_variable(((IdentifierAST*)attr_target)->identifier, attr_target).is_array;
+		}
 	}
 	else if (attr_target->type == ast_type::function_call_ast) {
 		std::wstring function_name = ((FunctionCallAST*)attr_target)->function_name;
@@ -451,7 +460,7 @@ bool is_attr_target_array(BaseAST* attr_target) {
 		is_array = parsed_function_data[function_name]->array_return_type != L"";
 	}
 	else if (attr_target->type == ast_type::array_refer_ast) {
-		is_array = get_data_of_variable(((ArrayReferAST*)attr_target)->identifier, attr_target).is_array;
+		return false;
 	}
 
 	return is_array && attr_target->type != array_refer_ast;
@@ -461,6 +470,8 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 	BaseAST* searcher = identifier_ast;
 	BaseAST* attr_target = identifier_ast;
 	std::wstring result;
+	bool is_array = false;
+	bool first_time_check_attr_props = true;
 
 	while (true) {
 		if (searcher->attr == nullptr) break;
@@ -475,20 +486,26 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 			searcher = searcher->attr;
 		}
 
-		std::wstring type = get_type_of_attr_target(attr_target);
-		bool is_array = is_attr_target_array(attr_target);
-
-		attr_target_class = type;
+		if (first_time_check_attr_props) {
+			first_time_check_attr_props = false;
+			is_array = is_attr_target_array(attr_target);
+			attr_target_class = get_type_of_attr_target(attr_target);
+		}
 
 		//append attribute data.
 		if (searcher->type == ast_type::identifier_ast) {
-			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, attr_target_class, is_array);
+			attr_target_class = member_variable.type;
+			is_array = member_variable.is_array;
 
 			append_data(result, L"@LOAD_ATTR " + std::to_wstring(member_variable.id)
 				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 		}
 		else if (searcher->type == ast_type::function_call_ast) {
-			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, type, is_array);
+
+			MemberFunctionData member_function = get_member_function_data((FunctionCallAST*)searcher, attr_target_class, is_array);
+			attr_target_class = member_function.return_type;
+			is_array = member_function.return_type == L"array";
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
 				std::wstring param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
@@ -500,14 +517,18 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 				+ std::to_wstring(((FunctionCallAST*)searcher)->parameters.size()) + L" " + std::to_wstring(searcher->line_number) + L"\n", 0);
 		}
 		else if (searcher->type == ast_type::array_refer_ast) {
-			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, type, is_array);
+			MemberVariableData member_variable = get_member_variable_data((IdentifierAST*)searcher, attr_target_class, is_array);
+			attr_target_class = member_variable.type;
+			is_array = member_variable.type == L"array"; // array for array array<array>
 
 			append_data(result, L"@LOAD_ATTR " + std::to_wstring(member_variable.id)
 				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 
 			for (int i = 0; i < ((ArrayReferAST*)searcher)->indexes.size(); i++) {
+				std::wstring backup_attr_target_class = attr_target_class;
 				append_data(result, create_ir(((ArrayReferAST*)searcher)->indexes[i], 0), 0);
 				append_data(result, L"@ARRAY_GET " + std::to_wstring(searcher->line_number), 0);
+				attr_target_class = backup_attr_target_class;
 			}
 		}
 
@@ -871,7 +892,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(constructor_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)i,constructor_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
 		line += L"{";
@@ -932,7 +953,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			local_variable_symbol->at(local_variable_symbol->size() - 1).insert(
 				std::make_pair(function_declaration_ast->parameters[i]->names[0],
 					Data{ (unsigned int)i,	function_declaration_ast->parameters[i]->var_types[0] }
-			));
+				));
 		}
 
 		line += L" {\n";

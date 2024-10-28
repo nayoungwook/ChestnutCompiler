@@ -59,7 +59,7 @@ scopes get_scope_of_identifier(std::wstring const& identifier, BaseAST* identifi
 std::wstring create_assign_ir(BaseAST* ast, int indentation);
 std::wstring create_identifier_ir(IdentifierAST* identifier_ast);
 
-MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstring const& type, bool is_array);
+MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstring const& attr_target_type, bool is_array);
 
 MemberFunctionData get_member_function_of_array(FunctionCallAST* searcher);
 MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstring const& type, bool is_array);

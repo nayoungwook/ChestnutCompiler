@@ -15,7 +15,7 @@ void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_ast
 
 struct MemberFunctionData {
 	unsigned int id;
-	std::wstring name, access_modifier;
+	std::wstring name, access_modifier, return_type;
 };
 
 struct MemberVariableData {
