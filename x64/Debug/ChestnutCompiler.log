@@ -1,19 +1,60 @@
 ﻿  cn_ir_generator.cpp
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(510,15): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(676,29): warning C4267: '+=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(690,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(705,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(716,13): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(762,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(774,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(794,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(1401,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267: '초기화 중': 'size_t'에서 '_Ty2'(으)로 변환하면서 데이터가 손실될 수 있습니다.
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         with
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         [
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:             _Ty2=unsigned int
-C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.40.33807\include\utility(276,61): warning C4267:         ]
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(141,1): warning C4715: 'get_scope_of_function': 모든 제어 경로에서 값을 반환하지는 않습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(112,1): warning C4715: 'get_scope_of_identifier': 모든 제어 경로에서 값을 반환하지는 않습니다.
-C:\Users\user\source\repos\Chestnut\ChestnutCompiler\ir_generator\cn_ir_generator.cpp(235,1): warning C4715: 'get_data_of_variable': 모든 제어 경로에서 값을 반환하지는 않습니다.
-  ChestnutCompiler.vcxproj -> C:\Users\user\source\repos\Chestnut\x64\Debug\ChestnutCompiler.exe
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(510,15): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(672,29): warning C4267: '+=': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(686,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(701,55): warning C4267: '+=': 'size_t'에서 'unsigned int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(712,13): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(760,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(772,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(792,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(1399,14): warning C4267: '초기화 중': 'size_t'에서 'int'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61): warning C4267: '초기화 중': 'size_t'에서 '_Ty2'(으)로 변환하면서 데이터가 손실될 수 있습니다.
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61): warning C4267:         with
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61): warning C4267:         [
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61): warning C4267:             _Ty2=unsigned int
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61): warning C4267:         ]
+  (소스 파일 'ir_generator/cn_ir_generator.cpp'을(를) 컴파일하는 중)
+  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\utility(278,61):
+  템플릿 인스턴스화 컨텍스트(가장 오래된 인스턴스화 컨텍스트)가
+  	C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(924,26):
+  	컴파일되는 함수 템플릿 인스턴스화 'std::pair<std::_List_iterator<std::_List_val<std::_List_simple_types<_Ty>>>,bool> std::unordered_map<std::wstring,unsigned int,std::hash<std::wstring>,std::equal_to<std::wstring>,std::allocator<_Ty>>::insert<std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64>,0>(_Valty &&)'에 대한 참조를 확인하세요.
+          with
+          [
+              _Ty=std::pair<const std::wstring,unsigned int>,
+              _Valty=std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64>
+          ]
+  		C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(924,33):
+  		'create_ir'에서 'std::unordered_map<std::wstring,unsigned int,std::hash<std::wstring>,std::equal_to<std::wstring>,std::allocator<std::pair<const std::wstring,unsigned int>>>::insert'에 대한 첫 번째 참조를 확인하세요.
+  	C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\unordered_map(275,20):
+  	컴파일되는 함수 템플릿 인스턴스화 'std::pair<std::_List_iterator<std::_List_val<std::_List_simple_types<_Ty>>>,bool> std::_Hash<std::_Umap_traits<_Kty,unsigned int,std::_Uhash_compare<_Kty,_Hasher,_Keyeq>,_Alloc,false>>::emplace<std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64>>(std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64> &&)'에 대한 참조를 확인하세요.
+          with
+          [
+              _Ty=std::pair<const std::wstring,unsigned int>,
+              _Kty=std::wstring,
+              _Hasher=std::hash<std::wstring>,
+              _Keyeq=std::equal_to<std::wstring>,
+              _Alloc=std::allocator<std::pair<const std::wstring,unsigned int>>
+          ]
+  	C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xhash(610,53):
+  	컴파일되는 함수 템플릿 인스턴스화 'std::_List_node_emplace_op2<std::allocator<std::_List_node<_Ty,std::_Default_allocator_traits<_Alloc>::void_pointer>>>::_List_node_emplace_op2<std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64>>(_Alnode &,std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64> &&)'에 대한 참조를 확인하세요.
+          with
+          [
+              _Ty=std::pair<const std::wstring,unsigned int>,
+              _Alloc=std::allocator<std::pair<const std::wstring,unsigned int>>,
+              _Alnode=std::allocator<std::_List_node<std::pair<const std::wstring,unsigned int>,std::_Default_allocator_traits<std::allocator<std::pair<const std::wstring,unsigned int>>>::void_pointer>>
+          ]
+  	C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\list(585,25):
+  	컴파일되는 함수 템플릿 인스턴스화 'void std::_Default_allocator_traits<_Alloc>::construct<_Ty,std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64>>(_Alloc &,_Objty *const ,std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64> &&)'에 대한 참조를 확인하세요.
+          with
+          [
+              _Alloc=std::allocator<std::_List_node<std::pair<const std::wstring,unsigned int>,std::_Default_allocator_traits<std::allocator<std::pair<const std::wstring,unsigned int>>>::void_pointer>>,
+              _Ty=std::pair<const std::wstring,unsigned int>,
+              _Objty=std::pair<const std::wstring,unsigned int>
+          ]
+  	C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.38.33130\include\xmemory(723,103):
+  	컴파일되는 함수 템플릿 인스턴스화 'std::pair<const std::wstring,unsigned int>::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64,0>(std::pair<std::basic_string<wchar_t,std::char_traits<wchar_t>,std::allocator<wchar_t>>,unsigned __int64> &&) noexcept'에 대한 참조를 확인하세요.
+  
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(112): warning C4715: 'get_scope_of_identifier': 모든 제어 경로에서 값을 반환하지는 않습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(141): warning C4715: 'get_scope_of_function': 모든 제어 경로에서 값을 반환하지는 않습니다.
+C:\workspace\ChsetnutCompiler\ir_generator\cn_ir_generator.cpp(235): warning C4715: 'get_data_of_variable': 모든 제어 경로에서 값을 반환하지는 않습니다.
+  ChestnutCompiler.vcxproj -> C:\Users\nayou\source\repos\Chestnut\x64\Debug\ChestnutCompiler.exe

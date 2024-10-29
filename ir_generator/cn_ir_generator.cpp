@@ -508,10 +508,8 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 			is_array = member_function.return_type == L"array";
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
-				std::wstring backup_attr_target_class = attr_target_class;
 				std::wstring param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
-				attr_target_class = backup_attr_target_class;
 			}
 
 			append_data(result, L"@CALL_ATTR " + std::to_wstring(member_function.id)
@@ -527,10 +525,8 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 
 			for (int i = 0; i < ((ArrayReferAST*)searcher)->indexes.size(); i++) {
-				std::wstring backup_attr_target_class = attr_target_class;
 				append_data(result, create_ir(((ArrayReferAST*)searcher)->indexes[i], 0), 0);
 				append_data(result, L"@ARRAY_GET " + std::to_wstring(searcher->line_number), 0);
-				attr_target_class = backup_attr_target_class;
 			}
 		}
 
@@ -722,6 +718,8 @@ void create_super_call(BaseAST* ast, std::wstring& result, int indentation) {
 }
 
 const std::wstring create_ir(BaseAST* ast, int indentation) {
+
+	std::wstring backup_attr_target_class = attr_target_class;
 
 	std::wstring result = L"";
 
@@ -1409,6 +1407,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 	};
 
 	}
-
+	
+	attr_target_class = backup_attr_target_class;
 	return result;
 }
