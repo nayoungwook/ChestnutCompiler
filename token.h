@@ -4,7 +4,7 @@
 #include <map>
 
 enum token_type {
-	tok_null = -1,
+	tok_none = -1,
 
 	tok_identifier = 0,
 	tok_constant_number = 1,
@@ -103,7 +103,7 @@ enum token_type {
 };
 
 static std::map<int, std::string> token_string = {
-	{tok_null, "unexpected"},
+	{tok_none, "none"},
 	{tok_identifier, "identifier"},
 	{tok_constant_number, "number"},
 	{tok_equal, "=="},

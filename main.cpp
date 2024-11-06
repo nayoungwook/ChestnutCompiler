@@ -2,9 +2,13 @@
 
 int main() {
 
-	std::vector<Token*> tokens = tokenize(L"var x: int = 10;", 0);
+	Tokenizer* tokenizer = new Tokenizer();
+	Parser* parser = new Parser();
 
+	tokenizer->register_file(L"var x: int = 10 - 5;");
 
+	std::vector<Token*> tokens = tokenizer->tokenize();
+	BaseAST* ast = parser->parse_tokens(tokens);
 
 	return 0;
 }

@@ -2,14 +2,14 @@
 
 static wchar_t next_char, cur_char;
 
-wchar_t get_char(std::wstring& line, int& _i) {
+wchar_t Tokenizer::get_char(std::wstring& line, int& _i) {
 	if (_i + 1 < line.length()) {
 		next_char = line[_i + 1];
 	}
 	return cur_char = line[_i++];
 }
 
-std::wstring get_number_literal(std::wstring& identifier, std::wstring& line, int& i) {
+std::wstring Tokenizer::get_number_literal(std::wstring& identifier, std::wstring& line, int& i) {
 	std::wstring number_string = L"";
 
 	while (isdigit(cur_char) || cur_char == '.') {
@@ -31,11 +31,26 @@ std::wstring get_number_literal(std::wstring& identifier, std::wstring& line, in
 	return number_string;
 }
 
-std::vector<Token*> tokenize(std::wstring line, int line_number) {
+void Tokenizer::register_file(std::wstring const line) {
+	this->file.push_back(line);
+}
+
+std::vector<Token*> Tokenizer::tokenize() {
+	std::vector<Token*> result;
+
+	for (int i = 0; i < this->file.size(); i++) {
+		std::vector<Token*> tokenized_line = this->tokenize_line(this->file[i], i + 1);
+		result.insert(result.end(), tokenized_line.begin(), tokenized_line.end());
+	}
+
+	return result;
+}
+
+std::vector<Token*> Tokenizer::tokenize_line(std::wstring line, int line_number) {
 	std::wstring identifier = L"";
 	std::vector<Token*> result_tokens;
 
-	token_type type = tok_null;
+	token_type type = tok_none;
 	int i = 0;
 	size_t line_length = line.length();
 

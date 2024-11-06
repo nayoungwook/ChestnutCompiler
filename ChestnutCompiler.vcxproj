@@ -20,11 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="token.cpp" />
     <ClCompile Include="tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ast.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="parser.h" />
     <ClInclude Include="token.h" />
     <ClInclude Include="tokenizer.h" />
   </ItemGroup>
