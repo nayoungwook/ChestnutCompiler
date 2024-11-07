@@ -54,9 +54,9 @@ std::vector<BaseAST*> Parser::to_postfix(std::vector<BaseAST*>& nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
 		BaseAST* _cur_node = nodes[i];
 
-		if (_cur_node->type == constant_number_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
-			|| _cur_node->type == new_ast || _cur_node->type == character_ast || _cur_node->type == bool_ast || _cur_node->type == keyboard_ast
-			|| _cur_node->type == constant_string_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast) {
+		if (_cur_node->type == number_literal_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
+			|| _cur_node->type == new_ast || _cur_node->type == character_literal_ast || _cur_node->type == bool_literal_ast || _cur_node->type == keyboard_ast
+			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast) {
 			result.push_back(_cur_node);
 			continue;
 		}
@@ -117,7 +117,7 @@ BaseAST* Parser::create_expression_ast(std::vector<Token*>& tokens) {
 		if (nodes[i]->type == operator_ast) {
 			if (dynamic_cast<OperatorAST*>(nodes[i])->oper == L"-") {
 				if (nodes[i + 1]->type == paren_ast) {
-					modified_nodes.push_back(new ConstantNumberAST(L"-1"));
+					modified_nodes.push_back(new NumberLiteralAST(L"-1"));
 					modified_nodes.push_back(new OperatorAST(L"*"));
 					continue;
 				}
@@ -127,7 +127,7 @@ BaseAST* Parser::create_expression_ast(std::vector<Token*>& tokens) {
 						modified_nodes.push_back(new OperatorAST(L"+"));
 					}
 					modified_nodes.push_back(new ParenAST(L"("));
-					modified_nodes.push_back(new ConstantNumberAST(L"-1"));
+					modified_nodes.push_back(new NumberLiteralAST(L"-1"));
 					modified_nodes.push_back(new OperatorAST(L"*"));
 					modified_nodes.push_back(nodes[i + 1]);
 					modified_nodes.push_back(new ParenAST(L")"));
@@ -218,7 +218,7 @@ BaseAST* Parser::parse_tokens(std::vector<Token*>& tokens) {
 	{
 
 	case tok_constant_number: {
-		result = new ConstantNumberAST(first_token->get_identifier());
+		result = new NumberLiteralAST(first_token->get_identifier());
 		break;
 	}
 

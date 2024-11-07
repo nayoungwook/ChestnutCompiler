@@ -20,15 +20,15 @@ enum ast_type {
 	if_statement_ast = 6,
 	for_statement_ast = 7,
 	bin_expr_ast = 8,
-	constant_number_ast = 9,
+	number_literal_ast = 9,
 	identifier_ast = 10,
-	constant_string_ast = 11,
+	string_literal_ast = 11,
 	operator_ast = 12,
 	paren_ast = 13,
 	class_ast = 14,
 	new_ast = 15,
-	character_ast = 16,
-	bool_ast = 17,
+	character_literal_ast = 16,
+	bool_literal_ast = 17,
 	while_statement_ast = 18,
 	array_ast = 19,
 	array_refer_ast = 20,
@@ -52,13 +52,13 @@ public:
 	BaseAST* refers = nullptr;
 };
 
-class ConstantNumberAST : public BaseAST {
+class NumberLiteralAST : public BaseAST {
 private:
 public:
 	std::wstring number_string = L"0";
 
-	ConstantNumberAST(const std::wstring& number) : number_string(number) {
-		type = constant_number_ast;
+	NumberLiteralAST(const std::wstring& number) : number_string(number) {
+		type = number_literal_ast;
 	}
 };
 
@@ -82,30 +82,30 @@ public:
 	}
 };
 
-class ConstantStringAST : public BaseAST {
+class StringLiteralAST : public BaseAST {
 private:
 public:
 	std::wstring constant_string; // TODO : maybe do some type check later.
-	ConstantStringAST(const std::wstring& constant_string) : constant_string(constant_string) {
-		type = constant_string_ast;
+	StringLiteralAST(const std::wstring& constant_string) : constant_string(constant_string) {
+		type = string_literal_ast;
 	}
 };
 
-class CharacterAST : public BaseAST {
+class CharacterLiteralAST : public BaseAST {
 private:
 public:
 	char character; // TODO : maybe do some type check later.
-	CharacterAST(char character) : character(character) {
-		type = character_ast;
+	CharacterLiteralAST(char character) : character(character) {
+		type = character_literal_ast;
 	}
 };
 
-class BoolAST : public BaseAST {
+class BoolLiteralAST : public BaseAST {
 private:
 public:
 	bool bool_data; // TODO : maybe do some type check later.
-	BoolAST(bool bool_data) : bool_data(bool_data) {
-		type = bool_ast;
+	BoolLiteralAST(bool bool_data) : bool_data(bool_data) {
+		type = bool_literal_ast;
 	}
 };
 
