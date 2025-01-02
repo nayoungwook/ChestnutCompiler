@@ -112,7 +112,7 @@ std::vector<Token*> tokenize(std::wstring line, int line_number) {
 			if (identifier == L"vector") type = tok_vector;
 		}
 		else if (isdigit(cur_char)) {
-			type = tok_identifier_number;
+			type = tok_number_literal;
 			get_number_literal(identifier, line, i, line_number);
 		}
 		else if (cur_char == L'\"') {

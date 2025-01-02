@@ -6,7 +6,7 @@
 enum token_type {
 	tok_null = -1,
 
-	tok_identifier = 0, tok_identifier_number = 1,
+	tok_identifier = 0, tok_number_literal = 1,
 
 	tok_equal = 2, tok_not_equal = 3, tok_greater = 4, tok_lesser = 5, tok_eq_greater = 6, tok_eq_lesser = 7,
 
@@ -67,7 +67,7 @@ enum token_type {
 static std::map<int, std::string> token_string = {
 	{tok_null, "unexpected"},
 	{tok_identifier, "identifier"},
-	{tok_identifier_number, "number"},
+	{tok_number_literal, "number"},
 	{tok_equal, "=="},
 	{tok_not_equal, "!="},
 	{tok_greater, ">"},
@@ -131,6 +131,7 @@ static std::map<int, std::string> token_string = {
 	{tok_int, "int"},
 	{tok_float, "float"},
 	{tok_bool, "bool"},
+	{tok_not, "!"},
 };
 
 class Token

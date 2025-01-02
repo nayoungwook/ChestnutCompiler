@@ -508,8 +508,10 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 			is_array = member_function.return_type == L"array";
 
 			for (int i = ((FunctionCallAST*)searcher)->parameters.size() - 1; i >= 0; i--) {
+				std::wstring backup_attr_target_class = attr_target_class;
 				std::wstring param = create_ir(((FunctionCallAST*)searcher)->parameters[i], 0);
 				append_data(result, param, 0);
+				attr_target_class = backup_attr_target_class;
 			}
 
 			append_data(result, L"@CALL_ATTR " + std::to_wstring(member_function.id)
@@ -525,8 +527,10 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 				+ L" (" + member_variable.name + L") " + std::to_wstring(searcher->line_number) + L"\n", 0);
 
 			for (int i = 0; i < ((ArrayReferAST*)searcher)->indexes.size(); i++) {
+				std::wstring backup_attr_target_class = attr_target_class;
 				append_data(result, create_ir(((ArrayReferAST*)searcher)->indexes[i], 0), 0);
 				append_data(result, L"@ARRAY_GET " + std::to_wstring(searcher->line_number), 0);
+				attr_target_class = backup_attr_target_class;
 			}
 		}
 
@@ -649,7 +653,8 @@ std::wstring create_assign_ir(BaseAST* ast, int indentation) {
 
 int get_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* area, std::wstring const& obj_identifier) {
 	int result = 0;
-	for (int i = 0; i < area->size(); i++) {
+
+	for (int i = area->size() - 1; i >= 0; i--) {
 		if (area->at(i).find(obj_identifier) != area->at(i).end()) {
 			std::unordered_map<std::wstring, Data>::iterator area_iterator;
 			std::unordered_map<std::wstring, Data> found_area = area->at(i);
@@ -719,12 +724,9 @@ void create_super_call(BaseAST* ast, std::wstring& result, int indentation) {
 
 const std::wstring create_ir(BaseAST* ast, int indentation) {
 
-	std::wstring backup_attr_target_class = attr_target_class;
-
 	std::wstring result = L"";
 
 	switch (ast->type) {
-
 	case option_ast: {
 		OptionAST* option_ast = (OptionAST*)ast;
 
@@ -984,6 +986,18 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		break;
 	};
 
+	case not_ast: {
+		NotAST* not_ast = (NotAST*)ast;
+
+		std::wstring expr_ir = create_ir(not_ast->expression, 0);
+		append_data(result, expr_ir, indentation);
+
+		std::wstring line = L"@NOT " + std::to_wstring(ast->line_number);
+		append_data(result, line, indentation);
+
+		break;
+	}
+
 	case cast_ast: {
 		CastAST* cast_ast = (CastAST*)ast;
 
@@ -997,8 +1011,8 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		break;
 	}
 
-	case bool_ast: {
-		BoolAST* bool_ast = (BoolAST*)ast;
+	case bool_literal_ast: {
+		BoolLiteralAST* bool_ast = (BoolLiteralAST*)ast;
 
 		std::wstring bool_data = (bool_ast->bool_data ? L"true" : L"false");
 		std::wstring line = L"@PUSH_BOOL " + bool_data + L" " + std::to_wstring(ast->line_number);
@@ -1015,8 +1029,8 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		break;
 	};
 
-	case number_ast: {
-		NumberAST* number_ast = ((NumberAST*)ast);
+	case number_literal_ast: {
+		NumberLiteralAST* number_ast = ((NumberLiteralAST*)ast);
 
 		std::wstring number = number_ast->number_string;
 		std::wstring line = L"";
@@ -1083,7 +1097,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		ForStatementAST* for_statement_ast = ((ForStatementAST*)ast);
 
 		local_variable_symbols.top()->push_back({});
-		
+
 		append_data(result, create_ir(for_statement_ast->init, indentation), 0);
 
 		label_id++;
@@ -1229,7 +1243,7 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		}
 		else if (bin_expr_ast->oper == L"++" || bin_expr_ast->oper == L"--") {
 
-			std::wstring rhs = create_ir(new NumberAST(L"1"), indentation);
+			std::wstring rhs = create_ir(new NumberLiteralAST(L"1"), indentation);
 			append_data(result, rhs, 0);
 
 			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
@@ -1407,7 +1421,6 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 	};
 
 	}
-	
-	attr_target_class = backup_attr_target_class;
+
 	return result;
 }

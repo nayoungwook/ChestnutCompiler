@@ -87,8 +87,8 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
 		BaseAST* _cur_node = nodes[i];
 
-		if (_cur_node->type == number_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
-			|| _cur_node->type == new_ast || _cur_node->type == character_ast || _cur_node->type == bool_ast || _cur_node->type == keyboard_ast
+		if (_cur_node->type == number_literal_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
+			|| _cur_node->type == new_ast || _cur_node->type == character_literal_ast || _cur_node->type == bool_literal_ast || _cur_node->type == keyboard_ast
 			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast) {
 			result.push_back(_cur_node);
 			continue;
@@ -136,7 +136,7 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 		if (nodes[i]->type == operator_ast) {
 			if (dynamic_cast<OperatorAST*>(nodes[i])->oper == L"-") {
 				if (nodes[i + 1]->type == paren_ast) {
-					modified_nodes.push_back(new NumberAST(L"-1"));
+					modified_nodes.push_back(new NumberLiteralAST(L"-1"));
 					modified_nodes.push_back(new OperatorAST(L"*"));
 				}
 				else {
@@ -144,7 +144,7 @@ BaseAST* create_expr_ast(std::vector<BaseAST*>& nodes) {
 						modified_nodes.push_back(new OperatorAST(L"+"));
 					}
 					modified_nodes.push_back(new ParenAST(L"("));
-					modified_nodes.push_back(new NumberAST(L"-1"));
+					modified_nodes.push_back(new NumberLiteralAST(L"-1"));
 					modified_nodes.push_back(new OperatorAST(L"*"));
 					modified_nodes.push_back(nodes[i + 1]);
 					modified_nodes.push_back(new ParenAST(L")"));
@@ -324,9 +324,9 @@ Token* pull_token_and_expect(std::vector<Token*>& tokens, int token_type) { // i
 
 BaseAST* get_null_delcaration_ast(const std::wstring& type) {
 	if (type == L"number")
-		return new NumberAST(L"0");
+		return new NumberLiteralAST(L"0");
 	else if (type == L"bool")
-		return new BoolAST(true);
+		return new BoolLiteralAST(true);
 	else if (type == L"array") {
 		std::vector<BaseAST*> content;
 
@@ -750,9 +750,9 @@ ObjectAST* create_object_declaration_ast(std::vector<Token*>& tokens) {
 	std::vector<std::wstring> _type = { L"vector", L"number", L"number", L"number", L"texture" };
 	std::vector<std::wstring> _name = { L"position", L"width", L"height", L"rotation", L"sprite" };
 	std::vector<std::wstring> _var_types = { L"", L"", L"", L"", L"" };
-	std::vector<BaseAST*> vector_decl = { new NumberAST(L"0"), new NumberAST(L"0") };
+	std::vector<BaseAST*> vector_decl = { new NumberLiteralAST(L"0"), new NumberLiteralAST(L"0") };
 
-	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberAST(L"100") , new NumberAST(L"100"), new NumberAST(L"0"), new IdentifierAST(L"null") };
+	std::vector<BaseAST*> _decl = { new VectorDeclarationAST(vector_decl), new NumberLiteralAST(L"100") , new NumberLiteralAST(L"100"), new NumberLiteralAST(L"0"), new IdentifierAST(L"null") };
 
 	VariableDeclarationAST* _builtin_decl = new VariableDeclarationAST(_type, _name, _decl, _var_types, _decl.size());
 	_builtin_decl->access_modifier = L"public";
@@ -1324,8 +1324,8 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 
 	Token* first_token = pull_token_and_expect(tokens, -1);
 
-	if (first_token->type == tok_identifier_number) {
-		result = new NumberAST(first_token->identifier);
+	if (first_token->type == tok_number_literal) {
+		result = new NumberLiteralAST(first_token->identifier);
 	}
 	else if (first_token->type == tok_string_identifier) {
 		result = new StringLiteralAST(first_token->identifier);
@@ -1353,14 +1353,14 @@ BaseAST* parse(std::vector<Token*>& tokens) {
 	}
 	else if (first_token->identifier[0] == '\'') {
 		if (first_token->identifier[2] == '\'') {
-			result = new CharacterAST(first_token->identifier[1]);
+			result = new CharacterLiteralAST(first_token->identifier[1]);
 		}
 		else {
 			// error, it is not character
 		}
 	}
 	else if (first_token->type == tok_true || first_token->type == tok_false) {
-		result = new BoolAST(first_token->identifier == L"true");
+		result = new BoolLiteralAST(first_token->identifier == L"true");
 	}
 	else if (first_token->type == tok_l_paren || first_token->type == tok_r_paren) {
 		result = new ParenAST(first_token->identifier);
