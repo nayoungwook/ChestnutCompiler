@@ -12,6 +12,7 @@ BaseAST* parse(std::vector<Token*>& tokens);
 Token* pull_token_and_expect(std::vector<Token*>& tokens, int token_type);
 Token* check_token(std::vector<Token*>& tokens);
 void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_asts);
+bool is_operand_of_expression(BaseAST* _cur_node);
 
 struct MemberFunctionData {
 	unsigned int id;

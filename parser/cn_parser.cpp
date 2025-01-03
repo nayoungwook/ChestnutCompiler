@@ -80,6 +80,12 @@ int get_nodes_priority(const BaseAST* node) {
 	return -2;
 }
 
+bool is_operand_of_expression(BaseAST* _cur_node) {
+	return _cur_node->type == number_literal_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
+		|| _cur_node->type == new_ast || _cur_node->type == character_literal_ast || _cur_node->type == bool_literal_ast || _cur_node->type == keyboard_ast
+		|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast || _cur_node->type == not_ast;
+}
+
 std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 	std::vector<BaseAST*> result;
 	std::stack<BaseAST*> stk;
@@ -87,9 +93,7 @@ std::vector<BaseAST*> to_postfix(std::vector<BaseAST*>& nodes) {
 	for (int i = 0; i < nodes.size(); i++) {
 		BaseAST* _cur_node = nodes[i];
 
-		if (_cur_node->type == number_literal_ast || _cur_node->type == identifier_ast || _cur_node->type == function_call_ast
-			|| _cur_node->type == new_ast || _cur_node->type == character_literal_ast || _cur_node->type == bool_literal_ast || _cur_node->type == keyboard_ast
-			|| _cur_node->type == string_literal_ast || _cur_node->type == vector_declaration_ast || _cur_node->type == array_refer_ast || _cur_node->type == cast_ast) {
+		if (is_operand_of_expression(_cur_node)) {
 			result.push_back(_cur_node);
 			continue;
 		}
@@ -1179,10 +1183,10 @@ NotAST* create_not_ast(std::vector<Token*>& tokens) {
 	BaseAST* expression;
 
 	if (check_token(tokens)->type == tok_l_paren) {
-
 		std::vector<BaseAST*> expression_nodes;
 
-		expression_tokens.push_back(pull_token_and_expect(tokens, tok_l_paren));
+		pull_token_and_expect(tokens, tok_l_paren);
+
 		int paren_count = 1;
 		while (paren_count != 0) {
 			if (check_token(tokens)->type == tok_l_paren) {
@@ -1190,6 +1194,10 @@ NotAST* create_not_ast(std::vector<Token*>& tokens) {
 			}
 			if (check_token(tokens)->type == tok_r_paren) {
 				paren_count--;
+				if (paren_count == 0) {
+					pull_token_and_expect(tokens, tok_r_paren);
+					break;
+				}
 			}
 			expression_tokens.push_back(pull_token_and_expect(tokens, -1));
 		}
