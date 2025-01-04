@@ -257,7 +257,7 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 	}
 	else {
 		ClassAST* class_ast_searcher = parsed_class_data[attr_target_type];
-
+		int search_loop_count = 0;
 		while (true) {
 
 			if (member_variable_data[class_ast_searcher->name].find(searcher->identifier) != member_variable_data[class_ast_searcher->name].end()) {
@@ -268,11 +268,13 @@ MemberVariableData get_member_variable_data(IdentifierAST* searcher, std::wstrin
 				member_variable.access_modifier = member_variable_data[class_ast_searcher->name][searcher->identifier].access_modifier;
 				member_variable.type = member_variable_data[class_ast_searcher->name][searcher->identifier].type;
 				member_variable.is_array = member_variable_data[class_ast_searcher->name][searcher->identifier].is_array;
+				if (search_loop_count > 0)
+					found_in_parent_memory = true;
 			}
 
 			if (class_ast_searcher->parent_type == L"") break;
 			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
-			found_in_parent_memory = true;
+			search_loop_count++;
 		}
 	}
 
@@ -366,7 +368,7 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstr
 		}
 
 		ClassAST* class_ast_searcher = parsed_class_data[type];
-
+		int search_loop_count = 0;
 		while (true) {
 			if (member_function_data[class_ast_searcher->name].find(searcher->function_name) != member_function_data[class_ast_searcher->name].end()) {
 				member_function.id
@@ -374,11 +376,13 @@ MemberFunctionData get_member_function_data(FunctionCallAST* searcher, std::wstr
 				member_function.name = searcher->function_name;
 				member_function.access_modifier = member_function_data[class_ast_searcher->name][searcher->function_name].access_modifier;
 				member_function.return_type = member_function_data[class_ast_searcher->name][searcher->function_name].return_type;
+				if (search_loop_count > 0)
+					found_in_parent_memory = true;
 			}
 
 			if (class_ast_searcher->parent_type == L"") break;
 			class_ast_searcher = parsed_class_data[class_ast_searcher->parent_type];
-			found_in_parent_memory = true;
+			search_loop_count++;
 		}
 	}
 
