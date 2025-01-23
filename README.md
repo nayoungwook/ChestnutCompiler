@@ -1,12 +1,11 @@
 
-# Chestnut Compiler
+CHESTNUT COMPILER
+=====================================
 
-source code of compiler for chestnut programming language.
-
-Copyright © 2023-2024 Nayoungwook (Dexter). All rights reserved.
+Compiler for chestnut programming language.
 
 
-![Logo](https://github.com/nayoungwook/ChsetnutCompiler/blob/master/chestnut_logo.png?raw=true)
+.. image:: https://simpleicons.org/icons/discord.svg
 
 
 ## Who made this?

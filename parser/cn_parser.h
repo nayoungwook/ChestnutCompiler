@@ -17,6 +17,7 @@ bool is_operand_of_expression(BaseAST* _cur_node);
 struct MemberFunctionData {
 	unsigned int id;
 	std::wstring name, access_modifier, return_type;
+	int parameter_count;
 };
 
 struct MemberVariableData {

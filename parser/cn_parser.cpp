@@ -3,8 +3,8 @@
 extern std::unordered_map<std::wstring, ClassAST*> parsed_class_data;
 extern std::unordered_map<std::wstring, FunctionDeclarationAST*> parsed_function_data;
 extern std::unordered_map<std::wstring, unsigned int> class_id;
-extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberFunctionData>> member_function_data;
-extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberVariableData>> member_variable_data;
+extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberFunctionData>> member_function_symbol;
+extern std::unordered_map<std::wstring, std::unordered_map<std::wstring, MemberVariableData>> member_variable_symbol;
 
 std::vector<Token*> get_parameter_tokens(std::vector<Token*>& tokens) {
 
@@ -678,15 +678,16 @@ void appply_member_data(ClassAST* class_ast, std::vector<BaseAST*>& function_ast
 		data.access_modifier = ast->access_modifier;
 		data.name = name;
 		data.id = i;
+		data.parameter_count = ast->parameters.size();
 
 		member_functions.insert(std::make_pair(name, data));
 	}
 
-	member_function_data.insert(std::make_pair(class_ast->name, member_functions));
+	member_function_symbol.insert(std::make_pair(class_ast->name, member_functions));
 
 	std::unordered_map<std::wstring, MemberVariableData> member_variables;
 	assign_member_variable_data(class_ast, member_variables);
-	member_variable_data.insert(std::make_pair(class_ast->name, member_variables));
+	member_variable_symbol.insert(std::make_pair(class_ast->name, member_variables));
 }
 
 ClassAST* create_class_declaration_ast(std::vector<Token*>& tokens) {

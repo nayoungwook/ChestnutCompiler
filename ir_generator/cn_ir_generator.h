@@ -6,9 +6,18 @@
 #include "../parser/cn_ast.h"
 #include "../parser/cn_parser.h"
 
+struct _BuiltinFunctionData {
+	std::wstring name;
+	int id, parameter_count;
+} typedef BuiltinFunctionData;
+
+struct _GlobalFunctionData {
+	int id, parameter_count;
+} typedef GlobalFunctionData;
+
 // declared based on serach priority
-static std::unordered_map<std::wstring, unsigned int> global_function_symbol; // functions that exist in global area.
-static std::unordered_map<std::wstring, unsigned int> builtin_function_symbol; // functions that exist in builtin area.
+static std::unordered_map<std::wstring, GlobalFunctionData> global_function_symbol; // functions that exist in global area.
+static std::unordered_map<std::wstring, BuiltinFunctionData> builtin_function_symbol; // functions that exist in builtin area.
 
 struct MemberFunctionData;
 struct MemberVariableData;
@@ -23,14 +32,14 @@ struct _Data {
 	unsigned int id;
 	std::wstring type;
 	bool is_array;
-} typedef Data;
-Data get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast);
+} typedef VariableData;
+VariableData get_data_of_variable(std::wstring const& identifier, BaseAST* data_ast);
 
-static std::unordered_map<std::wstring, Data> global_variable_symbol; // functions that exist in global area.
-static std::stack<std::vector<std::unordered_map<std::wstring, Data>>*> local_variable_symbols;// functions that exist in local area.
+static std::unordered_map<std::wstring, VariableData> global_variable_symbol; // functions that exist in global area.
+static std::stack<std::vector<std::unordered_map<std::wstring, VariableData>>*> local_variable_symbol;// functions that exist in local area.
 
-unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* area);
-int get_local_variable_id(std::vector<std::unordered_map<std::wstring, Data>>* area, std::wstring const& obj_identifier);
+unsigned int generate_local_variable_id(std::vector<std::unordered_map<std::wstring, VariableData>>* area);
+int get_local_variable_id(std::vector<std::unordered_map<std::wstring, VariableData>>* area, std::wstring const& obj_identifier);
 
 unsigned int get_parent_member_variable_size(std::wstring const& class_name);
 unsigned int get_parent_member_function_size(std::wstring const& class_name);
@@ -41,8 +50,6 @@ static unsigned int label_id = 0;
 static std::wstring current_class = L"";
 static std::wstring attr_target_class = L"";
 static unsigned int current_class_id = 0;
-
-inline bool exist_in_symbol_table(std::unordered_map<std::wstring, unsigned int> area, std::wstring const& name);
 
 // declare builtin
 void declare_builtin_functions();
