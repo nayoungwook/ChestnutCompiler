@@ -512,7 +512,7 @@ std::wstring create_attr_ir(IdentifierAST* identifier_ast, std::wstring const& l
 				attr_target_class = backup_attr_target_class;
 			}
 
-			if (((FunctionCallAST*)searcher)->parameters.size() != member_function.parameter_count) {
+			if (member_function.parameter_count != -1 && ((FunctionCallAST*)searcher)->parameters.size() != member_function.parameter_count) {
 				CHESTNUT_THROW_ERROR(L"Failed to find function " + member_function.name, "FAILED_TO_FIND_FUNCTION", "008", attr_target->line_number);
 			}
 
@@ -1235,27 +1235,6 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		if (bin_expr_ast->oper == L"=") {
 			append_data(result, create_assign_ir(ast, indentation), 0);
 		}
-		else if (bin_expr_ast->oper == L"++" || bin_expr_ast->oper == L"--") {
-
-			std::wstring rhs = create_ir(new NumberLiteralAST(L"1"), indentation);
-			append_data(result, rhs, 0);
-
-			std::wstring lhs = create_ir(bin_expr_ast->lhs, indentation);
-			append_data(result, lhs, 0);
-
-			std::wstring oper = L"";
-
-			if (bin_expr_ast->oper == L"++")
-				oper = L"@ADD";
-			else if (bin_expr_ast->oper == L"--")
-				oper = L"@SUB";
-
-			oper += L" " + std::to_wstring(ast->line_number);
-			append_data(result, oper, indentation);
-
-			bin_expr_ast->rhs = nullptr;
-			append_data(result, create_assign_ir(bin_expr_ast, indentation), indentation);
-		}
 		else if (bin_expr_ast->oper == L">" ||
 			bin_expr_ast->oper == L"<" ||
 			bin_expr_ast->oper == L">=" ||
@@ -1358,6 +1337,94 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 		break;
 	}
 
+	case incre_ast:
+	case decre_ast:
+	{
+		std::wstring line = L"";
+		IdentifierAST* identifier_ast = nullptr;
+		std::wstring incre_decre_string = L"";
+
+		if (ast->type == ast_type::incre_ast) {
+			incre_decre_string = L"@INCRE";
+			identifier_ast = ((IdentifierAST*)((IncreAST*)ast)->target_ast);
+		}
+		else if (ast->type == ast_type::decre_ast) {
+			incre_decre_string = L"@DECRE";
+			identifier_ast = ((IdentifierAST*)((DecreAST*)ast)->target_ast);
+		}
+
+		if (identifier_ast->type == array_refer_ast) {
+			std::vector<BaseAST*> indexes;
+			indexes.assign(((ArrayReferAST*)identifier_ast)->indexes.begin(), ((ArrayReferAST*)identifier_ast)->indexes.end());
+			((ArrayReferAST*)identifier_ast)->indexes.clear();
+
+			append_data(result, create_identifier_ir(identifier_ast), 0);
+
+
+			for (int i = 0; i < indexes.size(); i++) {
+				append_data(line, create_ir(indexes[i], 0), 0);
+
+				if (indexes.size() - 1 == i)
+					append_data(line, incre_decre_string + L"_ARRAY " + std::to_wstring(identifier_ast->line_number), 0);
+				else
+					append_data(line, L"@ARRAY_GET " + std::to_wstring(identifier_ast->line_number), 0);
+			}
+
+			append_data(result, line, 0);
+
+			break;
+		}
+
+		if (identifier_ast->identifier == L"this") {
+		}
+		else if (identifier_ast->identifier == L"null") {
+		}
+		else {
+			scopes scope = get_scope_of_identifier(identifier_ast->identifier, identifier_ast);
+
+			if (scope == scope_local) {
+				line = incre_decre_string + L"_LOCAL " + std::to_wstring(get_local_variable_id(local_variable_symbol.top(), identifier_ast->identifier))
+					+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number) + L"\n";
+			}
+			else if (scope == scope_class) { // find variable in current class declaration.
+				std::wstring searcher = current_class;
+				bool found_in_parent = false;
+				while (parsed_class_data[searcher]->parent_type != L"") {
+					if (member_variable_symbol[searcher].find(identifier_ast->identifier) != member_variable_symbol[searcher].end()) { // member variable found.
+						break;
+					}
+
+					searcher = parsed_class_data[searcher]->parent_type; // search for parent.
+					found_in_parent = true;
+				}
+
+				// but, it was found in parnet and access modifier was private.
+				if (member_variable_symbol[searcher][identifier_ast->identifier].access_modifier == L"private" && found_in_parent) {
+					std::wstring w_name;
+					w_name.assign(identifier_ast->identifier.begin(), identifier_ast->identifier.end());
+
+					CHESTNUT_THROW_ERROR(L"Variable you attempt to access \'" + w_name + L"\' is not public. create getter or setter "
+						"\n\t\t\t(or just set it public.)"
+						, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "011", identifier_ast->line_number);
+				}
+
+				line = incre_decre_string + L"_CLASS " + std::to_wstring(get_parent_member_variable_size(searcher) + member_variable_symbol[searcher][identifier_ast->identifier].id)
+					+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
+			}
+			else if (scope == scope_global) {
+				line = incre_decre_string + L"_GLOBAL " + std::to_wstring(global_variable_symbol[identifier_ast->identifier].id)
+					+ L" (" + identifier_ast->identifier + L") " + std::to_wstring(identifier_ast->line_number);
+			}
+
+			line += L"\n";
+
+		}
+
+		append_data(result, line, 0);
+
+		break;
+	}
+
 	case function_call_ast: {
 		FunctionCallAST* function_call_ast = ((FunctionCallAST*)ast);
 		std::wstring function_name = function_call_ast->function_name;
@@ -1386,7 +1453,8 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 					, "ACCESS_MODIFIER_IS_NOT_PUBLIC", "010", ast->line_number);
 			}
 
-			if (function_call_ast->parameters.size() != member_function_symbol[current_class][function_name].parameter_count) {
+			int parameter_count = member_function_symbol[current_class][function_name].parameter_count;
+			if (parameter_count != -1 && function_call_ast->parameters.size() != parameter_count) {
 				CHESTNUT_THROW_ERROR(L"Failed to find function " + function_name, "FAILED_TO_FIND_FUNCTION", "008", function_call_ast->line_number);
 			}
 		}
@@ -1394,7 +1462,8 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			function_id = global_function_symbol[function_name].id;
 			call_type = L"@CALL_GLOBAL";
 
-			if (function_call_ast->parameters.size() != global_function_symbol[function_name].parameter_count) {
+			int parameter_count = global_function_symbol[function_name].parameter_count;
+			if (global_function_symbol[function_name].parameter_count != -1 && function_call_ast->parameters.size() != parameter_count) {
 				CHESTNUT_THROW_ERROR(L"Failed to find function " + function_name, "FAILED_TO_FIND_FUNCTION", "008", function_call_ast->line_number);
 			}
 		}
@@ -1402,7 +1471,8 @@ const std::wstring create_ir(BaseAST* ast, int indentation) {
 			function_id = builtin_function_symbol[function_name].id;
 			call_type = L"@CALL_BUILTIN";
 
-			if (function_call_ast->parameters.size() != builtin_function_symbol[function_name].parameter_count) {
+			int parameter_count = builtin_function_symbol[function_name].parameter_count;
+			if (parameter_count != -1 && function_call_ast->parameters.size() != parameter_count) {
 				CHESTNUT_THROW_ERROR(L"Failed to find function " + builtin_function_symbol[function_name].name, "FAILED_TO_FIND_FUNCTION", "008", function_call_ast->line_number);
 			}
 

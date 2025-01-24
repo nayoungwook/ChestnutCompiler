@@ -40,6 +40,8 @@ enum ast_type {
 	load_ast = 29,
 	font_ast = 30,
 	option_ast = 31,
+	incre_ast = 32,
+	decre_ast = 33,
 };
 
 class BaseAST {
@@ -386,6 +388,26 @@ public:
 
 	KeyboardAST(std::wstring& pressed_key) : pressed_key(pressed_key) {
 		type = keyboard_ast;
+	}
+};
+
+class IncreAST : public BaseAST {
+private:
+public:
+	BaseAST* target_ast = nullptr;
+
+	IncreAST(BaseAST* target_ast) : target_ast(target_ast) {
+		type = incre_ast;
+	}
+};
+
+class DecreAST : public BaseAST {
+private:
+public:
+	BaseAST* target_ast = nullptr;
+
+	DecreAST(BaseAST* target_ast) : target_ast(target_ast) {
+		type = decre_ast;
 	}
 };
 

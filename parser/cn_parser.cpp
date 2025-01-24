@@ -487,7 +487,8 @@ FunctionCallAST* create_function_call_ast(std::vector<Token*>& tokens, Identifie
 
 BaseAST* create_increase_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
 	pull_token_and_expect(tokens, tok_incre);
-	BinExprAST* result = new BinExprAST(L"++", target, nullptr);
+
+	IncreAST* result = new IncreAST(target);
 
 	if (tokens.size() != 0) {
 		if (check_token(tokens)->type == tok_semi_colon)
@@ -500,7 +501,8 @@ BaseAST* create_increase_identifier_ast(std::vector<Token*>& tokens, IdentifierA
 BaseAST* create_decrease_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* target) {
 
 	pull_token_and_expect(tokens, tok_decre);
-	BinExprAST* result = new BinExprAST(L"--", target, nullptr);
+
+	DecreAST* result = new DecreAST(target);
 
 	if (tokens.size() != 0) {
 		if (check_token(tokens)->type == tok_semi_colon)
@@ -550,29 +552,38 @@ BaseAST* create_identifier_ast(std::vector<Token*>& tokens, IdentifierAST* targe
 	bool _is_assign = tokens.size() != 0 && is_assign(check_token(tokens));
 	bool _is_function_call = tokens.size() != 0 && check_token(tokens)->type == tok_l_paren;
 	bool _is_comp = tokens.size() != 0 && is_comp(check_token(tokens));
-	bool _is_incre = tokens.size() != 0 && check_token(tokens)->type == tok_incre;
-	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
 	bool _is_array_reference = tokens.size() != 0 && check_token(tokens)->type == tok_l_sq_bracket;
 	bool _is_kb = target->identifier == L"key";
 
+	BaseAST* identifier_ast = nullptr;
+
 	if (_is_assign)
-		return create_assign_ast(tokens, target);
+		identifier_ast = create_assign_ast(tokens, target);
 	else if (_is_function_call)
-		return create_function_call_ast(tokens, target);
-	else if (_is_incre)
-		return create_increase_identifier_ast(tokens, target);
-	else if (_is_decre)
-		return create_decrease_identifier_ast(tokens, target);
+		identifier_ast = create_function_call_ast(tokens, target);
 	else if (_is_kb)
-		return create_kb_ast(tokens, target);
+		identifier_ast = create_kb_ast(tokens, target);
 	else if (_is_array_reference) {
 		ArrayReferAST* refer_ast = create_array_refer_ast(tokens, target);
 
-		BaseAST* result = create_identifier_ast(tokens, refer_ast);
-		return result;
+		identifier_ast = create_identifier_ast(tokens, refer_ast);
 	}
 	else
-		return target;
+		identifier_ast = target;
+
+	bool _is_decre = tokens.size() != 0 && check_token(tokens)->type == tok_decre;
+	if (tokens.size() != 0) {
+		int type = check_token(tokens)->type;
+
+		if (type == tok_incre) {
+			identifier_ast = create_increase_identifier_ast(tokens, target);
+		}
+		if (type == tok_decre) {
+			identifier_ast = create_decrease_identifier_ast(tokens, target);
+		}
+	}
+
+	return identifier_ast;
 }
 
 FunctionDeclarationAST* create_function_declaration_ast(std::vector<Token*>& tokens) {
